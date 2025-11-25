@@ -1,8 +1,10 @@
-<service android:name="org.test.myapp.NavListener"
-         android:label="My Map Listener"
-         android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-         android:exported="true">
-    <intent-filter>
-        <action android:name="android.service.notification.NotificationListenerService" />
-    </intent-filter>
-</service>
+
+        <service
+            android:name="in.daslearning.navindi.NavListener"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
