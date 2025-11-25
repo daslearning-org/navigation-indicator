@@ -3,6 +3,9 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.utils import platform
 
+## Global definitions
+__version__ = "0.0.1"
+
 # Global reference to keep the receiver alive
 br = None
 
@@ -27,7 +30,7 @@ class MainApp(App):
             # 2. Register Receiver
             global br
             br = BroadcastReceiver(
-                on_broadcast, actions=['org.test.myapp.MAP_UPDATE']
+                on_broadcast, actions=['in.daslearning.navindi.MAP_UPDATE']
             )
             br.start()
 

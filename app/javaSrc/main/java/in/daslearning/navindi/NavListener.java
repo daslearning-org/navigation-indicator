@@ -19,7 +19,7 @@ public class NavListener extends NotificationListenerService {
 
             if (title != null || text != null) {
                 // Broadcast this to Python
-                Intent intent = new Intent("org.test.myapp.MAP_UPDATE");
+                Intent intent = new Intent("in.daslearning.navindi.MAP_UPDATE");
                 intent.putExtra("title", title);
                 intent.putExtra("text", text);
                 sendBroadcast(intent);
