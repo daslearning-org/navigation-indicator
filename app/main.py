@@ -3,30 +3,56 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.utils import platform
 
-## Global definitions
-__version__ = "0.0.1"
-
-# Import necessary Android components only when running on Android
 if platform == 'android':
-    from jnius import autoclass
-    
+    from jnius import autoclass, java_method
+    from jnius import PythonJavaClass  # <-- NEW REQUIRED IMPORT
+
     # 1. Import necessary Java classes
     Intent = autoclass('android.content.Intent')
     IntentFilter = autoclass('android.content.IntentFilter')
     Context = autoclass('android.content.Context')
-    
-    # PythonActivity gives us access to the main Activity context
     PythonActivity = autoclass('org.kivy.android.PythonActivity')
+
+    # -------------------------------------------------------------------
+    # THE CRUCIAL CHANGE STARTS HERE
+    # We use PythonJavaClass to properly define the BroadcastReceiver subclass
+    # This resolves the "__javaclass__ definition missing" error.
+    # -------------------------------------------------------------------
+    class MapUpdateReceiver(PythonJavaClass):
+        # This defines the native Java class we are implementing/extending
+        __javaclass__ = 'android/content/BroadcastReceiver'
+        # Specify the interfaces (methods) that Android will call
+        __javainterfaces__ = ['org/kivy/android/PythonActivity$StateListener'] # Sometimes needed for PyActivity
+
+        # Initialize our Python object
+        def __init__(self, callback, **kwargs):
+            super(MapUpdateReceiver, self).__init__(**kwargs)
+            self.callback = callback
+
+        @java_method('(Landroid/content/Context;Landroid/content/Intent;)V')
+        def onReceive(self, context, intent):
+            """
+            This is the native Java onReceive method being implemented in Python.
+            The signature '(Landroid/content/Context;Landroid/content/Intent;)V' is mandatory.
+            """
+            # This runs on a background thread. Extract data and schedule callback.
+            title = intent.getStringExtra("title")
+            text = intent.getStringExtra("text")
+
+            # Schedule job/UI update on the Kivy main thread
+            Clock.schedule_once(lambda dt: self.callback(title, text), 0)
+
+# -------------------------------------------------------------------
 
 # Global reference to hold the BroadcastReceiver instance
 br_instance = None 
 
+## App start
 class NavApp(App):
     # ... (rest of the Kivy app structure)
 
     def build(self):
         self.label = Label(text="Waiting for Navigation Broadcast...")
-        # We now use a new function for starting the receiver:
         self.start_manual_receiver() 
         return self.label
 
@@ -34,48 +60,29 @@ class NavApp(App):
         if platform == 'android':
             global br_instance
             
-            # This is the Python wrapper for the Java BroadcastReceiver
-            # We define it here to access Python methods from Java context
-            class MapUpdateReceiver(autoclass('android.content.BroadcastReceiver')):
-                def __init__(self, callback):
-                    super().__init__()
-                    self.callback = callback
-
-                def onReceive(self, context, intent):
-                    # This runs on a background thread. Extract data and schedule callback.
-                    title = intent.getStringExtra("title")
-                    text = intent.getStringExtra("text")
-                    
-                    # Schedule job/UI update on the Kivy main thread
-                    Clock.schedule_once(lambda dt: self.process_nav_data(title, text), 0)
-
             # --- 1. Instantiate the Receiver and IntentFilter ---
-            br_instance = MapUpdateReceiver(self.process_nav_data)
+            # Instantiate the class we defined above
+            br_instance = MapUpdateReceiver(self.process_nav_data) 
             
-            # The action string MUST match the string sent by NavListener.java
+            # The rest of the registration logic is the same (and correct):
             action_string = 'in.daslearning.navindi.MAP_UPDATE' 
             intent_filter = IntentFilter(action_string)
 
             # --- 2. Register Receiver Manually with Flag ---
-            # Get the main application context
             context = PythonActivity.mActivity.getApplicationContext()
             
-            # Manually call registerReceiver, passing the RECEIVER_NOT_EXPORTED flag (API 31+)
-            # Note: The RECEIVER_NOT_EXPORTED constant value is 4 
-            # (Context.RECEIVER_NOT_EXPORTED = 0x4)
-            
-            # We are calling: context.registerReceiver(br_instance, intent_filter, null, null, Context.RECEIVER_NOT_EXPORTED)
+            # Context.RECEIVER_NOT_EXPORTED is value 4
             context.registerReceiver(
                 br_instance, 
                 intent_filter, 
-                None,  # permission (None for no special permission)
-                None,  # scheduler (None for default handler)
-                4      # flags: Context.RECEIVER_NOT_EXPORTED (Value is 4)
+                None,  
+                None,  
+                4      
             )
 
             print(f"BroadcastReceiver registered for action: {action_string} with NOT_EXPORTED flag.")
             
-            # --- 3. Prompt for Notification Access (Still required) ---
+            # --- 3. Prompt for Notification Access ---
             self.request_notification_permission()
 
 
