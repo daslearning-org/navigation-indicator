@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This template WILL be merged into the correct locations -->
+
+<!-- Permissions at top-level (safe to include here) -->
+<!-- uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" / -->
+
+<!-- Application-scoped elements must be wrapped inside <application> -->
+<application>
+
+    <service
+        android:name="in.daslearning.navindi.NavListener"
+        android:enabled="true"
+        android:exported="true"
+        android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+        <intent-filter>
+            <action android:name="android.service.notification.NotificationListenerService" />
+        </intent-filter>
+    </service>
+
+</application>
