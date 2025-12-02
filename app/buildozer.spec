@@ -22,7 +22,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,java,ttf
 #source.exclude_exts = spec
 
 # (list) List of directory to exclude (let empty to not exclude anything)
-source.exclude_dirs = tests, logs, bin, dist, patches, .venv, venv, env, .env, p4a_local_recipes
+source.exclude_dirs = tests, logs, bin, dist, patches, .venv, venv, env, .env, p4a_local_recipes, hookers
 
 # (list) List of exclusions using pattern matching
 # Do not prefix with './'
@@ -156,7 +156,7 @@ android.accept_sdk_license = True
 
 # (str) Extra xml to write directly inside the <manifest><application> tag of AndroidManifest.xml
 # use that parameter to provide a filename from where to load your custom XML arguments:
-android.extra_manifest_application_arguments = %(source.dir)s/manifest_update.xml
+#android.extra_manifest_application_arguments = %(source.dir)s/manifest_update.xml
 
 # (str) Full name including package path of the Java class that implements Python Service
 # use that parameter to set custom Java class which extends PythonService
@@ -347,7 +347,7 @@ p4a.branch = develop
 #p4a.local_recipes = ./p4a_local_recipes
 
 # (str) Filename to the hook for p4a
-#p4a.hook =
+p4a.hook = %(source.dir)s/hookers/replace_manifest.py
 
 # (str) Bootstrap to use for android builds
 # p4a.bootstrap = sdl2
