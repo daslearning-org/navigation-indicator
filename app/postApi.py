@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import uvicorn
+from threading import Thread
+import asyncio
 
 # data formatting for request
 class NavData(BaseModel):
@@ -10,18 +12,59 @@ class NavData(BaseModel):
 app = FastAPI()
 
 # api server class with callback function
-class PosiApiServer():
+class PosiApiServer:
 
-    def __init__(self):
+    def __init__(self, host="0.0.0.0", port=8089):
+        self.host = host
+        self.port = port
         self.kivyCallback = None
+        self.server: uvicorn.Server | None = None
+        self.thread: Thread | None = None
 
+    # ----------------------------
+    # Kivy callback
+    # ----------------------------
     def set_kivy_caller(self, callback=None):
-        if callback:
-            self.kivyCallback = callback
+        self.kivyCallback = callback
 
-    def start_fastapi(self):
-        app.state.server = self   # 👈 attach instance
-        uvicorn.run(app, host="0.0.0.0", port=8089, reload=False)
+    # ----------------------------
+    # Internal server runner
+    # ----------------------------
+    def _run(self):
+        config = uvicorn.Config(
+            app,
+            host=self.host,
+            port=self.port,
+            log_level="info",
+            loop="asyncio"
+        )
+        self.server = uvicorn.Server(config)
+        app.state.server = self  # attach instance
+        asyncio.run(self.server.serve())
+
+    # ----------------------------
+    # Public start
+    # ----------------------------
+    def start(self):
+        if self.thread and self.thread.is_alive():
+            print("Server already running")
+            return
+        self.thread = Thread(target=self._run, daemon=True)
+        self.thread.start()
+        print("FastAPI started")
+
+    # ----------------------------
+    # Public stop
+    # ----------------------------
+    def stop(self):
+        if self.server:
+            print("Stopping FastAPI...")
+            self.server.should_exit = True
+        if self.thread:
+            self.thread.join(timeout=5)
+        self.server = None
+        self.thread = None
+        print("FastAPI stopped")
 
 # handle post requests
 @app.post("/nav/")
@@ -42,4 +85,7 @@ if __name__ == "__main__":
 
     apiServ = PosiApiServer()
     apiServ.set_kivy_caller(kivy_func)
-    apiServ.start_fastapi()
+    apiServ.start()
+    import time
+    time.sleep(20) # number seconds to run the server
+    apiServ.stop()

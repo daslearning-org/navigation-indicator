@@ -1,6 +1,6 @@
 # main_layout.kv
 ## import local components
-#:import CamObjDetBox screens.cam_obj_detect.CamObjDetBox
+#:import NavMainBox screens.nav_screen.NavMainBox
 #:import SettingsBox screens.setting.SettingsBox
 #:import parse_color kivy.parser.parse_color
 
@@ -41,7 +41,7 @@
         text: "Settings & Help"
         on_press:
             root.nav_drawer.set_state("close")
-            root.screen_manager.current = "settings"
+            root.screen_manager.current = "settingsScr"
 
 
 MDScreen:
@@ -71,11 +71,11 @@ MDScreen:
                     name: "navIndiScr"
                     #on_enter: app.on_cam_obj_detect()
                     #on_leave: app.on_cam_obj_dt_leave()
-                    CamObjDetBox:
-                        id: cam_detect_box
+                    NavMainBox:
+                        id: nav_main_box
 
                 MDScreen:
-                    name: "settings"
+                    name: "settingsScr"
                     SettingsBox:
                         id: settings_box
 
