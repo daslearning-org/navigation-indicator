@@ -4,8 +4,9 @@ import sys
 from threading import Thread
 
 from kivymd.app import MDApp
+from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.navigationdrawer import MDNavigationDrawerMenu
-from kivymd.uix.filemanager import MDFileManager
+#from kivymd.uix.filemanager import MDFileManager
 from kivymd.uix.label import MDLabel
 from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton, MDFloatingActionButton
@@ -48,6 +49,21 @@ class ContentNavigationDrawer(MDNavigationDrawerMenu):
     screen_manager = ObjectProperty()
     nav_drawer = ObjectProperty()
 
+class MainScreenBox(MDBoxLayout):
+    top_pad = NumericProperty(0)
+    bottom_pad = NumericProperty(0)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if platform == "android":
+            try:
+                from android.display_cutout import get_height_of_bar
+                self.top_pad = int(get_height_of_bar('status'))
+                self.bottom_pad = int(get_height_of_bar('navigation'))
+            except Exception as e:
+                print(f"Failed android 15 padding: {e}")
+                self.top_pad = 32
+                self.bottom_pad = 48
+
 ### Main App
 class NavIndicatorApp(MDApp):
     is_api_server_on = BooleanProperty(False)
@@ -55,8 +71,6 @@ class NavIndicatorApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.test_var = None
-        self.top_pad = 0
-        self.bottom_pad = 0
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
@@ -66,9 +80,6 @@ class NavIndicatorApp(MDApp):
     def on_start(self):
         # paths setup
         if platform == "android":
-            from android.display_cutout import get_height_of_bar
-            self.top_pad = int(get_height_of_bar('status'))
-            self.bottom_pad = int(get_height_of_bar('navigation'))
             # paths on android
             context = autoclass('org.kivy.android.PythonActivity').mActivity
             android_path = context.getExternalFilesDir(None).getAbsolutePath()

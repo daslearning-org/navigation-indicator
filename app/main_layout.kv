@@ -45,11 +45,11 @@
 
 ## Main screen
 MDScreen:
-    padding: 0, app.top_pad, 0, app.bottom_pad
 
-    MDBoxLayout: # main container
+    MainScreenBox: # main container
         orientation: 'vertical'
         spacing: dp(4)
+        padding: 0, self.top_pad, 0, self.bottom_pad
 
         MDTopAppBar:
             pos_hint: {"top": 1}
@@ -87,3 +87,5 @@ MDScreen:
                 ContentNavigationDrawer:
                     screen_manager: screen_manager
                     nav_drawer: nav_drawer
+
+# End
