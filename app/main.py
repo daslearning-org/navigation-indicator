@@ -29,3 +29,5 @@ else:
     # Running in a normal Python environment
     base_path = os.path.dirname(os.path.abspath(__file__))
 kv_file_path = os.path.join(base_path, 'main_layout.kv')
+
+
