@@ -80,6 +80,7 @@ class NavIndicatorApp(MDApp):
             self.config_dir = os.path.join(self.user_data_dir, 'config')
         os.makedirs(self.config_dir, exist_ok=True)
         self.config_path = os.path.join(self.config_dir, 'config.json')
+        self.api_url = "http://127.0.0.1:8089/nav/" # to be updated as using a config file
         # set app specific objects / vars
         self.result_txt = self.root.ids.nav_main_box.ids.result_text
         self.app_api_server = PosiApiServer()
@@ -103,17 +104,39 @@ class NavIndicatorApp(MDApp):
             toggle_btn.icon = "stop"
             toggle_btn.md_bg_color = "orange"
 
+    def esp_api(self, id:str="", text:str=""): # to be updated with actual ESP API later
+        import requests
+        try:
+            requests.post(
+                self.api_url,
+                json={"id": id, "text": text}
+            )
+        except Exception as e:
+            print(f"An API error: {e}")
+
     def indicatior_light(self, instance, choice:str = "None"):
         btn_txt_update = self.root.ids.nav_main_box.ids.btn_text
-        btn_txt_update.text = f"{choice}"
+        api_text = ""
         #print(instance.md_bg_color)
         if instance.md_bg_color == [0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1.0]: # gray
             self.turn_off_all()
-            self.show_toast_msg(f"{choice} turned on", duration=2)
             instance.md_bg_color = "orange"
+            btn_txt_update.text = f"{choice} is ON"
+            api_text = f"{choice} is ON for API"
         else:
-            self.show_toast_msg(f"{choice} turned off", duration=2)
+            self.turn_off_all()
             instance.md_bg_color = "gray"
+            btn_txt_update.text = "All OFF"
+            api_text = f"{choice} is OFF for API"
+        # Call the ESP API
+        Thread(
+            target=self.esp_api,
+            kwargs={
+                "id": "test_id",
+                "text": api_text
+            },
+            daemon=True
+        ).start()
 
     def turn_off_all(self):
         btn_group = [
@@ -126,7 +149,6 @@ class NavIndicatorApp(MDApp):
         ]
         for btn in btn_group:
             btn.md_bg_color = "gray"
-
 
     def show_toast_msg(self, message, is_error=False, duration=3):
         from kivymd.uix.snackbar import MDSnackbar
@@ -162,7 +184,7 @@ class NavIndicatorApp(MDApp):
         self.txt_dialog_closer(instance)
         self.open_link(instance=instance, url="https://github.com/daslearning-org/navigation-indicator/releases")
 
-    def update_checker(self, instance):
+    def update_checker(self, instance=None):
         buttons = [
             MDFlatButton(
                 text="Cancel",
