@@ -55,6 +55,8 @@ class NavIndicatorApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.test_var = None
+        self.top_pad = 0
+        self.bottom_pad = 0
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
@@ -64,6 +66,9 @@ class NavIndicatorApp(MDApp):
     def on_start(self):
         # paths setup
         if platform == "android":
+            from android.display_cutout import get_height_of_bar
+            self.top_pad = int(get_height_of_bar('status'))
+            self.bottom_pad = int(get_height_of_bar('navigation'))
             # paths on android
             context = autoclass('org.kivy.android.PythonActivity').mActivity
             android_path = context.getExternalFilesDir(None).getAbsolutePath()

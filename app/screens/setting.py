@@ -14,7 +14,6 @@ Builder.load_string('''
 
 <SettingsBox>:
     orientation: 'vertical'
-    padding: 0, root.top_pad, 0, root.bottom_pad
 
     Accordion:
         orientation: 'vertical'
@@ -84,18 +83,7 @@ Builder.load_string('''
 
 class SettingsBox(MDBoxLayout):
     """ The main settings box which contains the setting, help & other required sections """
-    top_pad = NumericProperty(0)
-    bottom_pad = NumericProperty(0)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.name = "settings_main_bx"
-        if platform == "android":
-            try:
-                from android.display_cutout import get_height_of_bar
-                self.top_pad = int(get_height_of_bar('status'))
-                self.bottom_pad = int(get_height_of_bar('navigation'))
-            except Exception as e:
-                print(f"Failed android 15 padding: {e}")
-                self.top_pad = 32
-                self.bottom_pad = 48

@@ -38,7 +38,7 @@ version.filename = %(source.dir)s/main.py
 # (list) Application requirements
 # /<your-codebase>/.buildozer/android/platform/build-arm64-v8a/build/python-installs/ttssts/arm64-v8a
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3, kivy==2.3.1, kivymd==1.2.0, pyjnius, android, docutils, filetype, pillow, plyer==2.1.0, Pygments, requests, annotated-doc, pydantic, starlette, typing-extensions, typing-inspection, fastapi, click, h11, uvicorn
+requirements = python3, kivy==2.3.1, kivymd==1.2.0, pyjnius, android, docutils, filetype, pillow, plyer==2.1.0, Pygments, requests, annotated-doc, annotated-types, pydantic-core, pydantic==2.12.5, idna, anyio, starlette, typing-extensions, typing-inspection, fastapi, click, h11, uvicorn
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -332,7 +332,7 @@ p4a.url = https://github.com/daslearning-org/p4a-unofficial.git
 #p4a.fork = kivy
 
 # (str) python-for-android branch to use, defaults to master
-p4a.branch = v0.0.3
+p4a.branch = numpy2
 
 # ... other configurations
 #pip.trusted_hosts = pypi.org files.pythonhosted.org
