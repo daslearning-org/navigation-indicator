@@ -1,0 +1,91 @@
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+import uvicorn
+from threading import Thread
+import asyncio
+
+# data formatting for request
+class NavData(BaseModel):
+    id: str
+    text: str | None = None
+
+app = FastAPI()
+
+# api server class with callback function
+class PosiApiServer:
+
+    def __init__(self, host="0.0.0.0", port=8089):
+        self.host = host
+        self.port = port
+        self.kivyCallback = None
+        self.server: uvicorn.Server | None = None
+        self.thread: Thread | None = None
+
+    # ----------------------------
+    # Kivy callback
+    # ----------------------------
+    def set_kivy_caller(self, callback=None):
+        self.kivyCallback = callback
+
+    # ----------------------------
+    # Internal server runner
+    # ----------------------------
+    def _run(self):
+        config = uvicorn.Config(
+            app,
+            host=self.host,
+            port=self.port,
+            log_level="info",
+            loop="asyncio"
+        )
+        self.server = uvicorn.Server(config)
+        app.state.server = self  # attach instance
+        asyncio.run(self.server.serve())
+
+    # ----------------------------
+    # Public start
+    # ----------------------------
+    def start(self):
+        if self.thread and self.thread.is_alive():
+            print("Server already running")
+            return
+        self.thread = Thread(target=self._run, daemon=True)
+        self.thread.start()
+        print("FastAPI started")
+
+    # ----------------------------
+    # Public stop
+    # ----------------------------
+    def stop(self):
+        if self.server:
+            print("Stopping FastAPI...")
+            self.server.should_exit = True
+        if self.thread:
+            self.thread.join(timeout=5)
+        self.server = None
+        self.thread = None
+        print("FastAPI stopped")
+
+# handle post requests
+@app.post("/nav/")
+async def process_nav_notification(item: NavData, request: Request):
+    server: PosiApiServer = request.app.state.server
+
+    print(f"{item.id}: {item.text}")
+
+    if server.kivyCallback:
+        server.kivyCallback(item.id, item.text)
+
+    return item
+
+# test locally
+if __name__ == "__main__":
+    def kivy_func(id, text):
+        print("CALLBACK FROM API:", id, text)
+
+    apiServ = PosiApiServer()
+    apiServ.set_kivy_caller(kivy_func)
+    apiServ.start()
+    import time
+    time.sleep(20) # number seconds to run the server
+    apiServ.stop()
