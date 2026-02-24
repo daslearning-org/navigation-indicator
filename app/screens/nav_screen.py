@@ -101,9 +101,9 @@ Builder.load_string('''
 
     MDGridLayout: # server buttons
         cols: 2
-        size_hint_y: 0.2
+        size_hint_y: 0.1
         spacing: dp(4)
-        padding: 14, 0, 14, 0 # left, top, right, bottom
+        padding: 14, 4, 14, 0 # left, top, right, bottom
 
         MDFillRoundFlatIconButton:
             id: start_app_server_btn
@@ -117,7 +117,7 @@ Builder.load_string('''
             on_release: app.toggle_api_server()
 
     BoxLayout: # result display
-        size_hint_y: 0.2
+        size_hint_y: 0.3
         id: nav_result_box
         orientation: 'vertical'
         spacing: dp(4)
@@ -126,16 +126,18 @@ Builder.load_string('''
         MDLabel:
             id: btn_text
             halign: "center"
+            valign: "top"
             markup: True
             text: "Button updates will be shown here."
-            #adaptive_height: True
+            adaptive_height: True
 
         MDLabel:
             id: result_text
             halign: "center"
+            valign: "top"
             markup: True
             text: "Your Navigation will be shown here."
-            #adaptive_height: True
+            adaptive_height: True
 
 ''')
 
