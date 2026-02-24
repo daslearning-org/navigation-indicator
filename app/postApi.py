@@ -6,8 +6,12 @@ import asyncio
 
 # data formatting for request
 class NavData(BaseModel):
-    id: str
+    title: str
     text: str | None = None
+    sub_text: str | None = None
+    text_lines: str | None = None
+    ticker_text: str | None = None
+    big_text: str | None = None
 
 app = FastAPI()
 
@@ -66,22 +70,39 @@ class PosiApiServer:
         self.thread = None
         print("FastAPI stopped")
 
+# clean text
+def clean_text(text):
+    if not text:
+        return ""
+    import re
+    # Looks for a word ending in a hyphen, a newline, and another word.
+    # Replaces "word-\nword" with "wordword"
+    text = re.sub(r'(\w+)-\n(\w+)', r'\1\2', text)
+    # 2. Now, normalize all other whitespace
+    text = re.sub(r'\s+', ' ', text)
+    text = text.replace('\n', " ")
+    return text.strip()
+
 # handle post requests
 @app.post("/nav/")
 async def process_nav_notification(item: NavData, request: Request):
     server: PosiApiServer = request.app.state.server
 
-    print(f"{item.id}: {item.text}")
+    print(f"{item.title}, {item.text}, {item.sub_text},{item.ticker_text}, {item.big_text}")
 
     if server.kivyCallback:
-        server.kivyCallback(item.id, item.text)
+        server.kivyCallback(item)
 
     return item
 
 # test locally
 if __name__ == "__main__":
-    def kivy_func(id, text):
-        print("CALLBACK FROM API:", id, text)
+    def kivy_func(item):
+        full_text = ""
+        for i in item:
+            txt = item[i]
+            full_text = full_text + f"{txt}, "
+        print(full_text)
 
     apiServ = PosiApiServer()
     apiServ.set_kivy_caller(kivy_func)

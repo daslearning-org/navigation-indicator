@@ -42,7 +42,7 @@ from screens.init_screen import ConfigInput
 from screens.nav_screen import NavMainBox
 
 # import local APIs
-from postApi import PosiApiServer
+from postApi import PosiApiServer, clean_text
 
 ## define custom kivymd classes
 class ContentNavigationDrawer(MDNavigationDrawerMenu):
@@ -102,8 +102,13 @@ class NavIndicatorApp(MDApp):
         self.app_api_server = PosiApiServer()
         self.app_api_server.set_kivy_caller(self.api_callback)
 
-    def api_callback(self, id:str = "", text:str = ""):
-        self.result_txt.text = f"{id}: {text}"
+    def api_callback(self, item):
+        full_text = ""
+        for i in item:
+            print(i[1])
+            txt = clean_text(i[1])
+            full_text = full_text + f"{txt}, "
+        self.result_txt.text = full_text
 
     def toggle_api_server(self):
         toggle_btn = self.root.ids.nav_main_box.ids.start_app_server_btn
@@ -120,12 +125,12 @@ class NavIndicatorApp(MDApp):
             toggle_btn.icon = "stop"
             toggle_btn.md_bg_color = "orange"
 
-    def esp_api(self, id:str="", text:str=""): # to be updated with actual ESP API later
+    def esp_api(self, title:str="", text:str=""): # to be updated with actual ESP API later
         import requests
         try:
             requests.post(
                 self.api_url,
-                json={"id": id, "text": text}
+                json={"title": title, "text": text}
             )
         except Exception as e:
             print(f"An API error: {e}")
@@ -148,7 +153,7 @@ class NavIndicatorApp(MDApp):
         Thread(
             target=self.esp_api,
             kwargs={
-                "id": "test_id",
+                "title": "test_id",
                 "text": api_text
             },
             daemon=True
