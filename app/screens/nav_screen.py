@@ -14,6 +14,7 @@ Builder.load_string('''
 <NavMainBox>:
     orientation: 'vertical'
     spacing: dp(4)
+    padding: 0, 0, 0, self.bottom_pad
 
     MDGridLayout: # other symbols buttons
         cols: 4
@@ -31,7 +32,7 @@ Builder.load_string('''
             #pos_hint: {"center_x": .5, "center_y": .5}
             size_hint_x: 0.25
             size_hint_y: 0.9
-            on_release: app.indicatior_light(self, "left-u")
+            on_release: app.indicatior_light(self, "u-left")
 
         MDIconButton:
             id: park_btn
@@ -55,7 +56,7 @@ Builder.load_string('''
             #pos_hint: {"center_x": .5, "center_y": .5}
             size_hint_x: 0.25
             size_hint_y: 0.9
-            on_release: app.indicatior_light(self, "stop")
+            on_release: app.indicatior_light(self, "no-overtake")
 
         MDIconButton:
             id: right_u_turn_btn
@@ -67,7 +68,7 @@ Builder.load_string('''
             #pos_hint: {"center_x": .5, "center_y": .5}
             size_hint_x: 0.25
             size_hint_y: 0.9
-            on_release: app.indicatior_light(self, "right-u")
+            on_release: app.indicatior_light(self, "u-right")
 
     MDGridLayout: # indicator buttons
         cols: 4
@@ -142,7 +143,18 @@ Builder.load_string('''
 ''')
 
 class NavMainBox(MDBoxLayout):
+    top_pad = NumericProperty(0)
+    bottom_pad = NumericProperty(0)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.name = "nav_main_bx"
+        if platform == "android":
+            try:
+                from android.display_cutout import get_height_of_bar
+                self.top_pad = int(get_height_of_bar('status'))
+                self.bottom_pad = int(get_height_of_bar('navigation'))
+            except Exception as e:
+                print(f"Failed android 15 padding: {e}")
+                self.top_pad = 32
+                self.bottom_pad = 48

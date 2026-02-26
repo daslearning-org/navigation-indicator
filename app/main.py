@@ -19,7 +19,7 @@ from kivy.lang import Builder
 from kivy.properties import StringProperty, NumericProperty, ObjectProperty, BooleanProperty
 
 if platform == "android":
-    from jnius import autoclass
+    from jnius import autoclass, cast
 
 # IMPORTANT: Set this property for keyboard behavior
 Window.softinput_mode = "below_target"
@@ -43,6 +43,7 @@ from screens.nav_screen import NavMainBox
 
 # import local APIs
 from postApi import PosiApiServer, clean_text
+from bluControl import BluetoothCon
 
 ## define custom kivymd classes
 class ContentNavigationDrawer(MDNavigationDrawerMenu):
@@ -71,6 +72,7 @@ class NavIndicatorApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.test_var = None
+        self.wake_lock = None
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
@@ -80,6 +82,21 @@ class NavIndicatorApp(MDApp):
     def on_start(self):
         # paths setup
         if platform == "android":
+            # permissions
+            from android.permissions import check_permission, request_permissions, Permission
+            sdk_version = 28
+            try:
+                VERSION = autoclass('android.os.Build$VERSION')
+                sdk_version = VERSION.SDK_INT
+                print(f"Android SDK: {sdk_version}")
+            except Exception as e:
+                print(f"Could not check the android SDK version: {e}")
+            permissions = [Permission.BLUETOOTH, Permission.BLUETOOTH_ADMIN, Permission.BLUETOOTH_CONNECT, Permission.WAKE_LOCK]
+            request_permissions(permissions)
+            try:
+                self.acquire_wakelock()
+            except Exception as e:
+                self.show_toast_msg(f"Screen on setup error: {e}", is_error=True)
             # paths on android
             context = autoclass('org.kivy.android.PythonActivity').mActivity
             android_path = context.getExternalFilesDir(None).getAbsolutePath()
@@ -101,6 +118,35 @@ class NavIndicatorApp(MDApp):
         self.result_txt = self.root.ids.nav_main_box.ids.result_text
         self.app_api_server = PosiApiServer()
         self.app_api_server.set_kivy_caller(self.api_callback)
+        self.bluCon = BluetoothCon(platform)
+        self.blu_ok = False
+        try:
+            self.blu_ok = self.bluCon.connect_device("1C:69:20:31:05:FE") # need to make it dynamic
+        except Exception as e:
+            print(f"Error in bluetooth connection: {e}")
+        if(self.blu_ok):
+            self.show_toast_msg("Bluetooth connection success")
+
+    def acquire_wakelock(self):
+        if self.wake_lock:
+            return  # already acquired
+        PythonActivity = autoclass("org.kivy.android.PythonActivity")
+        Context = autoclass("android.content.Context")
+        activity = PythonActivity.mActivity
+        PowerManager = autoclass("android.os.PowerManager")
+        power_manager = cast(PowerManager, activity.getSystemService(Context.POWER_SERVICE))
+        # Create wakelock (use PowerManager.FULL_WAKE_LOCK for full wakelock)
+        self.wake_lock = power_manager.newWakeLock(
+            PowerManager.FULL_WAKE_LOCK, "MyApp::WakeLockTag"
+        )
+        self.wake_lock.acquire()
+        print("WakeLock acquired")
+
+    def release_wakelock(self):
+        if self.wake_lock and self.wake_lock.isHeld():
+            self.wake_lock.release()
+            self.wake_lock = None
+            print("WakeLock released")
 
     def api_callback(self, item):
         full_text = ""
@@ -141,11 +187,13 @@ class NavIndicatorApp(MDApp):
         #print(instance.md_bg_color)
         if instance.md_bg_color == [0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1.0]: # gray
             self.turn_off_all()
+            Clock.schedule_once(lambda dt: self.bluCon.send_cmd(choice))
             instance.md_bg_color = "orange"
             btn_txt_update.text = f"{choice} is ON"
             api_text = f"{choice} is ON for API"
         else:
             self.turn_off_all()
+            Clock.schedule_once(lambda dt: self.bluCon.send_cmd("off"))
             instance.md_bg_color = "gray"
             btn_txt_update.text = "All OFF"
             api_text = f"{choice} is OFF for API"
@@ -225,6 +273,14 @@ class NavIndicatorApp(MDApp):
             f"Your version: {__version__}",
             buttons
         )
+
+    ## run on app exit
+    def on_stop(self):
+        if platform == "android":
+            try:
+                self.release_wakelock()
+            except Exception as e:
+                self.show_toast_msg(f"Screen on setup error: {e}", is_error=True)
 
 if __name__ == '__main__':
     NavIndicatorApp().run()
