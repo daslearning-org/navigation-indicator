@@ -42,7 +42,7 @@ const String RightIn[] PROGMEM = {"00000000", "00000100", "00000010", "11111111"
 const String LeftIn[] PROGMEM = {"00000000", "00100000", "01000000", "11111111", "01000001", "00100001", "00000001", "00000001"};
 const String UTurnRight[] PROGMEM = {"00000000", "00111000", "01000100", "01000100", "01000100", "01010101", "01001110", "01000100"};
 const String UTurnLeft[] PROGMEM = {"00000000", "00011100", "00100010", "00100010", "00100010", "10101010", "01110010", "00100010"};
-const String StopIn[] PROGMEM = {"00000000", "00011000", "00111100", "01111110", "01111110", "00111100", "00011000", "00000000"};
+const String StopIn[] PROGMEM = {"10000001", "01000010", "00100100", "00011000", "00011000", "00100100", "01000010", "10000001"};
 const String ParkIn[] PROGMEM = {"01111000", "01111100", "01100100", "01111100", "01111000", "01100000", "01100000", "01100000"};
 
 //** Function definitions */
@@ -61,15 +61,15 @@ void initFS(){
 bool readConfigFile() {
   File configFile = LittleFS.open(CONFIG_FILE, "r");
   if (!configFile) {
-  Serial.println("Failed to open config file for reading. File might not exist.");
-  return false;
+    Serial.println("Failed to open config file for reading. File might not exist.");
+    return false;
   }
 
   size_t size = configFile.size();
   if (size == 0) {
-  Serial.println("Config file is empty.");
-  configFile.close();
-  return false;
+    Serial.println("Config file is empty.");
+    configFile.close();
+    return false;
   }
 
   StaticJsonDocument<256> doc; // Adjust size based on your JSON's complexity
@@ -79,9 +79,9 @@ bool readConfigFile() {
   configFile.close(); // Close the file after reading
 
   if (error) {
-  Serial.print(F("deserializeJson() failed: "));
-  Serial.println(error.f_str());
-  return false;
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.f_str());
+    return false;
   }
 
   // Extract values from the JSON document
@@ -97,8 +97,8 @@ bool readConfigFile() {
 bool saveConfigFile() {
   File configFile = LittleFS.open(CONFIG_FILE, "w"); // Open in write mode, will create if not exists or overwrite
   if (!configFile) {
-  Serial.println("Failed to open config file for writing.");
-  return false;
+    Serial.println("Failed to open config file for writing.");
+    return false;
   }
 
   StaticJsonDocument<256> doc; // Adjust size based on your JSON's complexity
@@ -111,9 +111,9 @@ bool saveConfigFile() {
 
   // Serialize JSON to file
   if (serializeJson(doc, configFile) == 0) {
-  Serial.println(F("Failed to write to file"));
-  configFile.close();
-  return false;
+    Serial.println(F("Failed to write to file"));
+    configFile.close();
+    return false;
   }
   configFile.close();
   return true;
@@ -123,9 +123,9 @@ void setLED(const String *chosen, const CRGB& color){
   // for actual symbol display
   for(int i=0; i<8; i++){
     for(int j=0; j<8; j++){
-    if(chosen[i][j] == '1'){
-      leds[(8*i)+j] = color;
-    }
+      if(chosen[i][j] == '1'){
+        leds[(8*i)+j] = color;
+      }
     }
   }
 }
@@ -165,6 +165,7 @@ void loop(){
       setLED(Overtake, CRGB::Green);
     }
     else if (modeSelected == "no-overtake"){
+      FastLED.clear();
       setLED(Overtake, CRGB::Red);
     }
     else if (modeSelected == "u-right"){
@@ -178,31 +179,37 @@ void loop(){
     }
     FastLED.show();
   }
+  else if(awake && modeSelected == "no-overtake"){
+    FastLED.clear();
+    setLED(StopIn, CRGB::Red);
+    FastLED.show();
+  }
   else {
     FastLED.clear();
     FastLED.show();
   }
 
   if (SerialBT.available()) { // input from serial bluetooth
-    modeSelected = SerialBT.readStringUntil('\n');
-    modeSelected.trim();
-    modeSelected.toLowerCase();
-    Serial.println("Entered text: " + modeSelected);
-    if (modeSelected == "right" || modeSelected == "left" || 
-      modeSelected == "allow-overtake" || modeSelected == "no-overtake" || 
-      modeSelected == "u-right" || modeSelected == "u-left" || 
-      modeSelected == "park"){
+    String btText = SerialBT.readStringUntil('\n');
+    btText.trim();
+    btText.toLowerCase();
+    Serial.println("Entered text: " + btText); // Debug
+    if (btText == "right" || btText == "left" || 
+      btText == "allow-overtake" || btText == "no-overtake" || 
+      btText == "u-right" || btText == "u-left" || 
+      btText == "park"){
       stopLED();
       awake = true;
+      modeSelected = btText;
     }
-    else if(modeSelected == "no-blink"){
+    else if(btText == "no-blink"){
       blink = false;
       ledState = true;
     }
-    else if(modeSelected == "blink"){
+    else if(btText == "blink"){
       blink = true;
     }
-    else if(modeSelected == "off"){
+    else if(btText == "off"){
       awake = false;
     }
   }
