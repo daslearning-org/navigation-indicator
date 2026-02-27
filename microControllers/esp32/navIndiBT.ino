@@ -44,6 +44,7 @@ const String UTurnRight[] PROGMEM = {"00000000", "00111000", "01000100", "010001
 const String UTurnLeft[] PROGMEM = {"00000000", "00011100", "00100010", "00100010", "00100010", "10101010", "01110010", "00100010"};
 const String StopIn[] PROGMEM = {"10000001", "01000010", "00100100", "00011000", "00011000", "00100100", "01000010", "10000001"};
 const String ParkIn[] PROGMEM = {"01111000", "01111100", "01100100", "01111100", "01111000", "01100000", "01100000", "01100000"};
+const String OkIn[] PROGMEM = {"00000000", "01001001", "10101010", "10101100", "10101010", "01001001", "00000000", "00000000"};
 
 //** Function definitions */
 
@@ -161,7 +162,7 @@ void loop(){
     else if (modeSelected == "left"){
       setLED(LeftIn, CRGB::Orange);
     }
-    else if (modeSelected == "allow-overtake"){
+    else if (modeSelected == "ok-overtake"){
       setLED(Overtake, CRGB::Green);
     }
     else if (modeSelected == "no-overtake"){
@@ -195,7 +196,7 @@ void loop(){
     btText.toLowerCase();
     Serial.println("Entered text: " + btText); // Debug
     if (btText == "right" || btText == "left" || 
-      btText == "allow-overtake" || btText == "no-overtake" || 
+      btText == "ok-overtake" || btText == "no-overtake" || 
       btText == "u-right" || btText == "u-left" || 
       btText == "park"){
       stopLED();

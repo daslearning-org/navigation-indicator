@@ -71,7 +71,7 @@ class NavIndicatorApp(MDApp):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.test_var = None
+        self.stearing = "right"
         self.wake_lock = None
 
     def build(self):

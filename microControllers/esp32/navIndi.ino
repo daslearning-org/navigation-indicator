@@ -283,7 +283,7 @@ void loop(){
     else if (modeSelected == "left"){
       setLED(LeftIn, CRGB::Orange);
     }
-    else if (modeSelected == "allow-overtake"){
+    else if (modeSelected == "ok-overtake"){
       setLED(Overtake, CRGB::Green);
     }
     else if (modeSelected == "no-overtake"){
@@ -312,7 +312,7 @@ void loop(){
     modeSelected.toLowerCase();
     Serial.println("Entered text: " + modeSelected);
     if (modeSelected == "right" || modeSelected == "left" || 
-      modeSelected == "allow-overtake" || modeSelected == "no-overtake" || 
+      modeSelected == "ok-overtake" || modeSelected == "no-overtake" || 
       modeSelected == "u-right" || modeSelected == "u-left" || 
       modeSelected == "park"){
       stopLED();
@@ -337,7 +337,7 @@ void loop(){
     modeSelected.toLowerCase();
     Serial.println("Entered text: " + modeSelected);
     if (modeSelected == "right" || modeSelected == "left" || 
-      modeSelected == "allow-overtake" || modeSelected == "no-overtake" || 
+      modeSelected == "ok-overtake" || modeSelected == "no-overtake" || 
       modeSelected == "u-right" || modeSelected == "u-left" || 
       modeSelected == "park"){
       stopLED();
