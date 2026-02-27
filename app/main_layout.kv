@@ -2,6 +2,7 @@
 ## import local components
 #:import NavMainBox screens.nav_screen.NavMainBox
 #:import SettingsBox screens.setting.SettingsBox
+#:import ConfigInput screens.init_screen.ConfigInput
 #:import parse_color kivy.parser.parse_color
 
 <DrawerClickableItem@MDNavigationDrawerItem>
@@ -28,6 +29,13 @@
 
     MDNavigationDrawerLabel:
         text: "Select Operation"
+
+    DrawerClickableItem:
+        icon: "bluetooth"
+        text: "Initialize"
+        on_press:
+            root.nav_drawer.set_state("close")
+            root.screen_manager.current = "initScreen"
 
     DrawerClickableItem:
         icon: "compass"
@@ -63,10 +71,10 @@ MDScreen:
             MDScreenManager:
                 id: screen_manager
 
-                #MDScreen:
-                #    name: "initScreen"
-                #    ConfigInput:
-                #        id: init_screen
+                MDScreen:
+                    name: "initScreen"
+                    ConfigInput:
+                        id: init_screen
 
                 MDScreen:
                     name: "navIndiScr"

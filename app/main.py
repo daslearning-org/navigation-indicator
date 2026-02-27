@@ -148,6 +148,19 @@ class NavIndicatorApp(MDApp):
             self.wake_lock = None
             print("WakeLock released")
 
+    def set_stearing_pos(self, choice:str):
+        self.stearing = choice
+        print(self.stearing)
+
+    def list_bl_devices(self):
+        pass
+
+    def check_bl_on(self):
+        pass
+
+    def go_to_nav(self, confirm=False):
+        self.root.ids.screen_manager.current = "navIndiScr"
+
     def api_callback(self, item):
         full_text = ""
         for i in item:

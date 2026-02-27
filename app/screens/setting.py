@@ -30,17 +30,17 @@ Builder.load_string('''
                     pos: self.pos
 
             MDScrollView:
-                MDList:
-                    OneLineIconListItem:
-                        text: "Delete all output images"
-                        #on_release: app.show_delete_alert()
-                        IconLeftWidget:
-                            icon: "broom"
-                    OneLineIconListItem:
-                        text: "Change target SMS number"
-                        #on_release: app.change_sms_number()
-                        IconLeftWidget:
-                            icon: "phone"
+                #MDList:
+                #    OneLineIconListItem:
+                #        text: "Delete all output images"
+                #        #on_release: app.show_delete_alert()
+                #        IconLeftWidget:
+                #            icon: "broom"
+                #    OneLineIconListItem:
+                #        text: "Change target SMS number"
+                #        #on_release: app.change_sms_number()
+                #        IconLeftWidget:
+                #            icon: "phone"
 
         AccordionItem:
             title: "Help & Support"
