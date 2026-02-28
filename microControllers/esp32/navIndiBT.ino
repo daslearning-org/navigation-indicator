@@ -163,6 +163,7 @@ void loop(){
       setLED(LeftIn, CRGB::Orange);
     }
     else if (modeSelected == "ok-overtake"){
+      FastLED.clear();
       setLED(Overtake, CRGB::Green);
     }
     else if (modeSelected == "no-overtake"){
@@ -183,6 +184,11 @@ void loop(){
   else if(awake && modeSelected == "no-overtake"){
     FastLED.clear();
     setLED(StopIn, CRGB::Red);
+    FastLED.show();
+  }
+  else if(awake && modeSelected == "ok-overtake"){
+    FastLED.clear();
+    setLED(OkIn, CRGB::Green);
     FastLED.show();
   }
   else {

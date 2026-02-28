@@ -76,6 +76,7 @@ class NavIndicatorApp(MDApp):
         self.bl_mac = ""
         self.wake_lock = None
         self.bl_list_menu = None
+        self.txt_dialog = None
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
@@ -165,7 +166,8 @@ class NavIndicatorApp(MDApp):
                 self.bl_list_menu = MDDropdownMenu(
                     items=menu_items,
                 )
-                self.bl_list_menu.caller = button
+                caller_inst = self.root.ids.init_screen.ids.bt_list_btn_lbl
+                self.bl_list_menu.caller = caller_inst
                 self.bl_list_menu.open()
             else:
                 self.show_toast_msg("No Paired BT devices found!", is_error=True)

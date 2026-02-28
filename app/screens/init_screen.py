@@ -64,6 +64,7 @@ Builder.load_string('''
         adaptive_height: True
 
         MDLabel:
+            id: bt_list_btn_lbl
             text: "Choose ESP32 Bluetooth"
             halign: "left"
             font_size: sp(14)
