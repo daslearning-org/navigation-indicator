@@ -74,7 +74,7 @@ Builder.load_string('''
             pos_hint: {'center_x': 0.5}
             size_hint_x: 0.6
             font_size: sp(24)
-            on_release: app.list_bl_devices()
+            on_release: app.list_bl_devices(self)
 
     MDGridLayout:
         cols: 2
@@ -108,7 +108,7 @@ Builder.load_string('''
             size_hint_x: 0.3
             font_size: sp(24)
             #md_bg_color: 'pink'
-            #on_release: app.go_to_nav()
+            on_release: app.connect_esp_bt()
 
         MDFillRoundFlatIconButton:
             text: "Proceed"

@@ -59,7 +59,7 @@ Builder.load_string('''
             on_release: app.indicatior_light(self, "ok-overtake")
 
     MDGridLayout: # U-Turns
-        cols: 2
+        cols: 3
         size_hint_y: 0.2
         spacing: dp(4)
         padding: 14, 4, 14, 4 # left, top, right, bottom
@@ -72,9 +72,21 @@ Builder.load_string('''
             icon_size: sp(32)
             md_bg_color: 'gray'
             #pos_hint: {"center_x": .5, "center_y": .5}
-            size_hint_x: 0.25
+            size_hint_x: 1
             size_hint_y: 0.9
             on_release: app.indicatior_light(self, "u-left")
+
+        MDIconButton:
+            id: all_off
+            icon: "lightbulb-group-off"
+            theme_icon_color: "Custom"
+            icon_color: "black"
+            icon_size: sp(32)
+            md_bg_color: 'gray'
+            #pos_hint: {"center_x": .5, "center_y": .5}
+            size_hint_x: 1
+            size_hint_y: 0.9
+            on_release: app.indicatior_light(self, "off")
 
         MDIconButton:
             id: right_u_turn_btn
@@ -84,7 +96,7 @@ Builder.load_string('''
             icon_size: sp(32)
             md_bg_color: 'gray'
             #pos_hint: {"center_x": .5, "center_y": .5}
-            size_hint_x: 0.25
+            size_hint_x: 1
             size_hint_y: 0.9
             on_release: app.indicatior_light(self, "u-right")
 

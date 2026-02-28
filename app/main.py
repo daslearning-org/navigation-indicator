@@ -6,6 +6,7 @@ from threading import Thread
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.navigationdrawer import MDNavigationDrawerMenu
+from kivymd.uix.menu import MDDropdownMenu
 #from kivymd.uix.filemanager import MDFileManager
 from kivymd.uix.label import MDLabel
 from kivymd.uix.dialog import MDDialog
@@ -72,7 +73,9 @@ class NavIndicatorApp(MDApp):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.stearing = "right"
+        self.bl_mac = ""
         self.wake_lock = None
+        self.bl_list_menu = None
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
@@ -120,12 +123,6 @@ class NavIndicatorApp(MDApp):
         self.app_api_server.set_kivy_caller(self.api_callback)
         self.bluCon = BluetoothCon(platform)
         self.blu_ok = False
-        try:
-            self.blu_ok = self.bluCon.connect_device("1C:69:20:31:05:FE") # need to make it dynamic
-        except Exception as e:
-            print(f"Error in bluetooth connection: {e}")
-        if(self.blu_ok):
-            self.show_toast_msg("Bluetooth connection success")
 
     def acquire_wakelock(self):
         if self.wake_lock:
@@ -152,14 +149,79 @@ class NavIndicatorApp(MDApp):
         self.stearing = choice
         print(self.stearing)
 
-    def list_bl_devices(self):
-        pass
+    def list_bl_devices(self, button):
+        is_bl_on = self.bluCon.bl_on()
+        if is_bl_on:
+            devices_list = self.bluCon.list_devices()
+            if len(devices_list) >= 1:
+                menu_items = [
+                    {
+                        "text": f"{name}, {addr}",
+                        "leading_icon": "bluetooth",
+                        "on_release": lambda x=addr: self.set_bl_mac(x),
+                        "font_size": sp(36)
+                    } for name, addr in devices_list
+                ]
+                self.bl_list_menu = MDDropdownMenu(
+                    items=menu_items,
+                )
+                self.bl_list_menu.caller = button
+                self.bl_list_menu.open()
+            else:
+                self.show_toast_msg("No Paired BT devices found!", is_error=True)
+        else:
+            self.req_bl_on()
 
-    def check_bl_on(self):
-        pass
+    def req_bl_on(self):
+        enable_req = self.bluCon.request_enable_bl()
 
-    def go_to_nav(self, confirm=False):
-        self.root.ids.screen_manager.current = "navIndiScr"
+    def set_bl_mac(self, mac:str = ""):
+        if self.bl_list_menu:
+            self.bl_list_menu.dismiss()
+        bt_mac_inp = self.root.ids.init_screen.ids.bt_mac_inp
+        self.bl_mac = mac
+        if len(self.bl_mac) == 17:
+            bt_mac_inp.text = self.bl_mac
+
+    def connect_esp_bt(self):
+        bt_mac_inp = self.root.ids.init_screen.ids.bt_mac_inp
+        tmp_mac = str(bt_mac_inp.text)
+        tmp_mac = tmp_mac.strip()
+        if len(tmp_mac) == 17:
+            self.bl_mac = tmp_mac
+            try:
+                self.blu_ok = self.bluCon.connect_device(self.bl_mac)
+            except Exception as e:
+                print(f"Error in bluetooth connection: {e}")
+            if self.blu_ok:
+                self.show_toast_msg("Bluetooth connection success")
+        else:
+            self.show_toast_msg("Please enter a valid BT MAC or choose one from Paired Devices!", is_error=True)
+
+    def go_to_nav(self, confirm=False, instance=None):
+        if confirm or self.blu_ok:
+            self.root.ids.screen_manager.current = "navIndiScr"
+            self.txt_dialog_closer(instance)
+        else:
+            buttons = [
+                MDFlatButton(
+                    text="Cancel",
+                    theme_text_color="Custom",
+                    text_color=self.theme_cls.primary_color,
+                    on_release=self.txt_dialog_closer
+                ),
+                MDFlatButton(
+                    text="GO",
+                    theme_text_color="Custom",
+                    text_color="green",
+                    on_release=self.go_to_nav
+                ),
+            ]
+            self.show_text_dialog(
+                "No ESP Connected!", # subject
+                "ESP Navigation module is not connected. Do you still want to proceed?", # body
+                buttons
+            )
 
     def api_callback(self, item):
         full_text = ""
@@ -224,10 +286,12 @@ class NavIndicatorApp(MDApp):
         btn_group = [
             self.root.ids.nav_main_box.ids.left_u_turn_btn,
             self.root.ids.nav_main_box.ids.park_btn,
-            self.root.ids.nav_main_box.ids.stop_btn,
+            self.root.ids.nav_main_box.ids.no_overtake,
+            self.root.ids.nav_main_box.ids.allow_overtake,
             self.root.ids.nav_main_box.ids.right_u_turn_btn,
             self.root.ids.nav_main_box.ids.left_turn_btn,
             self.root.ids.nav_main_box.ids.right_turn_btn,
+            self.root.ids.nav_main_box.ids.all_off,
         ]
         for btn in btn_group:
             btn.md_bg_color = "gray"
