@@ -70,19 +70,6 @@ class PosiApiServer:
         self.thread = None
         print("FastAPI stopped")
 
-# clean text
-def clean_text(text):
-    if not text:
-        return ""
-    import re
-    # Looks for a word ending in a hyphen, a newline, and another word.
-    # Replaces "word-\nword" with "wordword"
-    text = re.sub(r'(\w+)-\n(\w+)', r'\1\2', text)
-    # 2. Now, normalize all other whitespace
-    text = re.sub(r'\s+', ' ', text)
-    text = text.replace('\n', " ")
-    return text.strip()
-
 # handle post requests
 @app.post("/nav/")
 async def process_nav_notification(item: NavData, request: Request):
