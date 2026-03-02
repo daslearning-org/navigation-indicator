@@ -15,6 +15,7 @@ build/
 test_codes/
 *.apk
 *.exe
+.vscode/
 
 # Distribution / packaging
 .Python
