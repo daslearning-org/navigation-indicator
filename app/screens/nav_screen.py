@@ -16,23 +16,11 @@ Builder.load_string('''
     spacing: dp(4)
     padding: 0, 0, 0, self.bottom_pad
 
-    MDGridLayout: # other symbols buttons
-        cols: 4
-        size_hint_y: 0.3
+    MDGridLayout: # overtake & other buttons
+        cols: 3
+        size_hint_y: 0.2
         spacing: dp(4)
         padding: 14, 4, 14, 4 # left, top, right, bottom
-
-        MDIconButton:
-            id: left_u_turn_btn
-            icon: "arrow-u-down-left-bold"
-            theme_icon_color: "Custom"
-            icon_color: "black"
-            icon_size: sp(32)
-            md_bg_color: 'gray'
-            #pos_hint: {"center_x": .5, "center_y": .5}
-            size_hint_x: 0.25
-            size_hint_y: 0.9
-            on_release: app.indicatior_light(self, "u-left")
 
         MDIconButton:
             id: park_btn
@@ -47,7 +35,7 @@ Builder.load_string('''
             on_release: app.indicatior_light(self, "park")
 
         MDIconButton:
-            id: stop_btn
+            id: no_overtake
             icon: "hand-back-right"
             theme_icon_color: "Custom"
             icon_color: "black"
@@ -59,8 +47,8 @@ Builder.load_string('''
             on_release: app.indicatior_light(self, "no-overtake")
 
         MDIconButton:
-            id: right_u_turn_btn
-            icon: "arrow-u-down-right-bold"
+            id: allow_overtake
+            icon: "car-arrow-right"
             theme_icon_color: "Custom"
             icon_color: "black"
             icon_size: sp(32)
@@ -68,10 +56,52 @@ Builder.load_string('''
             #pos_hint: {"center_x": .5, "center_y": .5}
             size_hint_x: 0.25
             size_hint_y: 0.9
+            on_release: app.indicatior_light(self, "ok-overtake")
+
+    MDGridLayout: # U-Turns
+        cols: 3
+        size_hint_y: 0.2
+        spacing: dp(4)
+        padding: 14, 4, 14, 4 # left, top, right, bottom
+
+        MDIconButton:
+            id: left_u_turn_btn
+            icon: "arrow-u-down-left-bold"
+            theme_icon_color: "Custom"
+            icon_color: "black"
+            icon_size: sp(32)
+            md_bg_color: 'gray'
+            #pos_hint: {"center_x": .5, "center_y": .5}
+            size_hint_x: 1
+            size_hint_y: 0.9
+            on_release: app.indicatior_light(self, "u-left")
+
+        MDIconButton:
+            id: all_off
+            icon: "lightbulb-group-off"
+            theme_icon_color: "Custom"
+            icon_color: "black"
+            icon_size: sp(32)
+            md_bg_color: 'gray'
+            #pos_hint: {"center_x": .5, "center_y": .5}
+            size_hint_x: 1
+            size_hint_y: 0.9
+            on_release: app.indicatior_light(self, "off")
+
+        MDIconButton:
+            id: right_u_turn_btn
+            icon: "arrow-u-down-right-bold"
+            theme_icon_color: "Custom"
+            icon_color: "black"
+            icon_size: sp(32)
+            md_bg_color: 'gray'
+            #pos_hint: {"center_x": .5, "center_y": .5}
+            size_hint_x: 1
+            size_hint_y: 0.9
             on_release: app.indicatior_light(self, "u-right")
 
     MDGridLayout: # indicator buttons
-        cols: 4
+        cols: 2
         size_hint_y: 0.3
         spacing: dp(4)
         padding: 14, 4, 14, 4 # left, top, right, bottom
@@ -118,7 +148,7 @@ Builder.load_string('''
             on_release: app.toggle_api_server()
 
     BoxLayout: # result display
-        size_hint_y: 0.3
+        size_hint_y: 0.2
         id: nav_result_box
         orientation: 'vertical'
         spacing: dp(4)

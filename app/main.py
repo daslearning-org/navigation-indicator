@@ -6,6 +6,7 @@ from threading import Thread
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.navigationdrawer import MDNavigationDrawerMenu
+from kivymd.uix.menu import MDDropdownMenu
 #from kivymd.uix.filemanager import MDFileManager
 from kivymd.uix.label import MDLabel
 from kivymd.uix.dialog import MDDialog
@@ -25,7 +26,7 @@ if platform == "android":
 Window.softinput_mode = "below_target"
 
 ## Global definitions
-__version__ = "0.0.1" # App version
+__version__ = "0.0.2" # App version
 
 # Determine the base path for your application's resources
 if getattr(sys, 'frozen', False):
@@ -42,8 +43,9 @@ from screens.init_screen import ConfigInput
 from screens.nav_screen import NavMainBox
 
 # import local APIs
-from postApi import PosiApiServer, clean_text
+from postApi import PosiApiServer
 from bluControl import BluetoothCon
+from mapBrain import distance_in_meters, extract_direction, clean_text
 
 ## define custom kivymd classes
 class ContentNavigationDrawer(MDNavigationDrawerMenu):
@@ -71,8 +73,12 @@ class NavIndicatorApp(MDApp):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.test_var = None
+        self.stearing = "right"
+        self.bl_mac = ""
         self.wake_lock = None
+        self.bl_list_menu = None
+        self.txt_dialog = None
+        self.auto_indicator = False
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
@@ -120,12 +126,6 @@ class NavIndicatorApp(MDApp):
         self.app_api_server.set_kivy_caller(self.api_callback)
         self.bluCon = BluetoothCon(platform)
         self.blu_ok = False
-        try:
-            self.blu_ok = self.bluCon.connect_device("1C:69:20:31:05:FE") # need to make it dynamic
-        except Exception as e:
-            print(f"Error in bluetooth connection: {e}")
-        if(self.blu_ok):
-            self.show_toast_msg("Bluetooth connection success")
 
     def acquire_wakelock(self):
         if self.wake_lock:
@@ -148,13 +148,124 @@ class NavIndicatorApp(MDApp):
             self.wake_lock = None
             print("WakeLock released")
 
+    def set_stearing_pos(self, choice:str):
+        self.stearing = choice
+        print(self.stearing)
+
+    def list_bl_devices(self, button):
+        is_bl_on = self.bluCon.bl_on()
+        if is_bl_on:
+            devices_list = self.bluCon.list_devices()
+            if len(devices_list) >= 1:
+                menu_items = [
+                    {
+                        "text": f"{name}, {addr}",
+                        "leading_icon": "bluetooth",
+                        "on_release": lambda x=addr: self.set_bl_mac(x),
+                        "font_size": sp(36)
+                    } for name, addr in devices_list
+                ]
+                self.bl_list_menu = MDDropdownMenu(
+                    items=menu_items,
+                )
+                caller_inst = self.root.ids.init_screen.ids.bt_list_btn_lbl
+                self.bl_list_menu.caller = caller_inst
+                self.bl_list_menu.open()
+            else:
+                self.show_toast_msg("No Paired BT devices found!", is_error=True)
+        else:
+            self.req_bl_on()
+
+    def req_bl_on(self):
+        enable_req = self.bluCon.request_enable_bl()
+
+    def set_bl_mac(self, mac:str = ""):
+        if self.bl_list_menu:
+            self.bl_list_menu.dismiss()
+        bt_mac_inp = self.root.ids.init_screen.ids.bt_mac_inp
+        self.bl_mac = mac
+        if len(self.bl_mac) == 17:
+            bt_mac_inp.text = self.bl_mac
+
+    def connect_esp_bt(self):
+        bt_mac_inp = self.root.ids.init_screen.ids.bt_mac_inp
+        tmp_mac = str(bt_mac_inp.text)
+        tmp_mac = tmp_mac.strip()
+        if len(tmp_mac) == 17:
+            self.bl_mac = tmp_mac
+            try:
+                self.blu_ok = self.bluCon.connect_device(self.bl_mac)
+            except Exception as e:
+                print(f"Error in bluetooth connection: {e}")
+            if self.blu_ok:
+                self.show_toast_msg("Bluetooth connection success")
+        else:
+            self.show_toast_msg("Please enter a valid BT MAC or choose one from Paired Devices!", is_error=True)
+
+    def go_to_nav(self, confirm=False, instance=None):
+        if confirm or self.blu_ok:
+            self.root.ids.screen_manager.current = "navIndiScr"
+            self.txt_dialog_closer(instance)
+        else:
+            buttons = [
+                MDFlatButton(
+                    text="Cancel",
+                    theme_text_color="Custom",
+                    text_color=self.theme_cls.primary_color,
+                    on_release=self.txt_dialog_closer
+                ),
+                MDFlatButton(
+                    text="GO",
+                    theme_text_color="Custom",
+                    text_color="green",
+                    on_release=self.go_to_nav
+                ),
+            ]
+            self.show_text_dialog(
+                "No ESP Connected!", # subject
+                "ESP Navigation module is not connected. Do you still want to proceed?", # body
+                buttons
+            )
+
+    # automation logic
+    def process_nav_from_api(self, distance, direction):
+        if distance > 0 and distance <= 50:
+            if direction == "left":
+                Clock.schedule_once(lambda dt: self.bluCon.send_cmd("left"))
+                self.auto_indicator = True
+            elif direction == "right":
+                Clock.schedule_once(lambda dt: self.bluCon.send_cmd("right"))
+                self.auto_indicator = True
+            elif direction == "u-turn":
+                if self.stearing == "right":
+                    Clock.schedule_once(lambda dt: self.bluCon.send_cmd("u-right"))
+                else:
+                    Clock.schedule_once(lambda dt: self.bluCon.send_cmd("u-left"))
+                self.auto_indicator = True
+            elif direction == "straight":
+                Clock.schedule_once(lambda dt: self.bluCon.send_cmd("off"))
+                self.auto_indicator = False
+        elif distance > 50 and self.auto_indicator:
+            Clock.schedule_once(lambda dt: self.bluCon.send_cmd("off"))
+            self.auto_indicator = False
+
     def api_callback(self, item):
-        full_text = ""
+        distance_final = None
+        direction_final = None
         for i in item:
             print(i[1])
-            txt = clean_text(i[1])
-            full_text = full_text + f"{txt}, "
-        self.result_txt.text = full_text
+            txt = str(i[1]).lower()
+            distance_tmp = distance_in_meters(txt)
+            direction_tmp = extract_direction(txt)
+            if distance_tmp:
+                distance_final = distance_tmp
+            if direction_tmp:
+                direction_final = direction_tmp
+            if distance_tmp and direction_tmp:
+                break # got both direction & distance to process
+        if distance_final and direction_final:
+            Clock.schedule_once(lambda dt: self.process_nav_from_api(distance_final, direction_final))
+        self.result_txt.text = f"{distance_final}, {direction_final}"
 
     def toggle_api_server(self):
         toggle_btn = self.root.ids.nav_main_box.ids.start_app_server_btn
@@ -211,10 +322,12 @@ class NavIndicatorApp(MDApp):
         btn_group = [
             self.root.ids.nav_main_box.ids.left_u_turn_btn,
             self.root.ids.nav_main_box.ids.park_btn,
-            self.root.ids.nav_main_box.ids.stop_btn,
+            self.root.ids.nav_main_box.ids.no_overtake,
+            self.root.ids.nav_main_box.ids.allow_overtake,
             self.root.ids.nav_main_box.ids.right_u_turn_btn,
             self.root.ids.nav_main_box.ids.left_turn_btn,
             self.root.ids.nav_main_box.ids.right_turn_btn,
+            self.root.ids.nav_main_box.ids.all_off,
         ]
         for btn in btn_group:
             btn.md_bg_color = "gray"
