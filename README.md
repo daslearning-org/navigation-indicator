@@ -13,7 +13,7 @@ The flow in simple words:
 ![Flow Diagram](./docs/images/nav-flow.gif)
 
 ## 🧑‍💻 Quickstart Guide
-Demo is coming soon...
+Follow this Quick Guide to setup your DIY navigation indicator (automatic or manual).
 
 ### 🦾 ESP32 Setup
 We can leverage `Classic Bluetooth` or `BLE` (low energy) to communicate from android device to ESP32.
@@ -38,7 +38,7 @@ Connect your ESP32 board to your computer with a USB cable & upload [this sketch
 
 ### 🧠 Automatic Navigation
 You can choose either the macrodroid or termux way. Which will read the notifications from your navigation app & trigger an API (local) call to our android app.
-> Note: Google maps or many other maps do not provice text based turn details like `turn left or make a u-turn` etc. You may choose such app which provides text based turn notifications, such as `OsmAnd`.
+> Note: Google maps or many other maps do not provide text based turn details like `turn left or make a u-turn` etc. You may choose such app which provides text based turn notifications, such as `OsmAnd`.
 
 #### 🤖 Macrodroid way
 This app is now technically a paid app (7 days trial or increase the days by viewing Ads). If you are a nerd, you may follow the Termux way.
