@@ -36,7 +36,7 @@ termux-api-start
 
 ### Run automation for automatic indicator lights
 ```bash
-cd <your_venv_path>
+cd <your_path>
 source .env/bin/activate
 
 # run code
