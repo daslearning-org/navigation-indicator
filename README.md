@@ -2,7 +2,8 @@
 Show automatic navigation indications like **left / right turn** indicator, **U-turn** indicator using your Android phone. Along with that, we can manually display some more indications like **no overtake**, **allow overtake** etc. using the buttons on our android app.
 
 ## 📽️ Demo
-Demo is coming soon...
+You can click on the below Image or this [Youtube Link](https://www.youtube.com/watch?v=UGAxZFuZRtc) to see the demo. Please let me know in the comments, how do you feel about this App. <br>
+[![VisionAI](./docs/images/ep1.jpg)](https://www.youtube.com/watch?v=UGAxZFuZRtc)
 
 ## 💡 How it works
 The flow in simple words:
