@@ -89,6 +89,7 @@ class NavIndicatorApp(MDApp):
     def on_start(self):
         # paths setup
         if platform == "android":
+            #from android import activity
             # permissions
             from android.permissions import check_permission, request_permissions, Permission
             sdk_version = 28
@@ -100,6 +101,7 @@ class NavIndicatorApp(MDApp):
                 print(f"Could not check the android SDK version: {e}")
             permissions = [Permission.BLUETOOTH, Permission.BLUETOOTH_ADMIN, Permission.BLUETOOTH_CONNECT, Permission.WAKE_LOCK]
             request_permissions(permissions)
+            # wake lock start to prevent sleep when app is active
             try:
                 self.acquire_wakelock()
             except Exception as e:
@@ -127,6 +129,14 @@ class NavIndicatorApp(MDApp):
         self.app_api_server.set_kivy_caller(self.api_callback)
         self.bluCon = BluetoothCon(platform)
         self.blu_ok = False
+
+    def on_pause(self):
+        print("App paused")
+        # Returning True allows app to continue running
+        return True
+
+    def on_resume(self):
+        print("App resumed")
 
     def acquire_wakelock(self):
         if self.wake_lock:
@@ -404,7 +414,7 @@ class NavIndicatorApp(MDApp):
             try:
                 self.release_wakelock()
             except Exception as e:
-                self.show_toast_msg(f"Screen on setup error: {e}", is_error=True)
+                print(f"Screen on setup error: {e}")
 
 if __name__ == '__main__':
     NavIndicatorApp().run()
