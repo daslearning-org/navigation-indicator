@@ -15,6 +15,7 @@ The flow in simple words:
 
 ## 🧑‍💻 Quickstart Guide
 Follow this Quick Guide to setup your DIY navigation indicator (automatic or manual).
+If wish to get the purchase links & more details, check the [official blog](https://blog.daslearning.in/microcontroller/esp32/automatic-vehicle-indicator.html)
 
 ### 🦾 ESP32 Setup
 We can leverage `Classic Bluetooth` or `BLE` (low energy) to communicate from android device to ESP32.
