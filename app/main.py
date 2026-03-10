@@ -2,6 +2,7 @@ import os
 os.environ['KIVY_GL_BACKEND'] = 'sdl2'
 import sys
 from threading import Thread
+from functools import partial
 
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -26,7 +27,7 @@ if platform == "android":
 Window.softinput_mode = "below_target"
 
 ## Global definitions
-__version__ = "0.0.2" # App version
+__version__ = "0.0.3" # App version
 
 # Determine the base path for your application's resources
 if getattr(sys, 'frozen', False):
@@ -199,6 +200,8 @@ class NavIndicatorApp(MDApp):
                 print(f"Error in bluetooth connection: {e}")
             if self.blu_ok:
                 self.show_toast_msg("Bluetooth connection success")
+            else:
+                self.show_toast_msg("Bluetooth connection failed!", is_error=True)
         else:
             self.show_toast_msg("Please enter a valid BT MAC or choose one from Paired Devices!", is_error=True)
 
@@ -229,31 +232,31 @@ class NavIndicatorApp(MDApp):
 
     # automation logic
     def process_nav_from_api(self, distance, direction):
-        if distance > 0 and distance <= 50:
+        if distance > 0 and distance <= 60:
             if direction == "left":
-                Clock.schedule_once(lambda dt: self.bluCon.send_cmd("left"))
+                Clock.schedule_once(partial(self.bluCon.send_cmd, "left"))
                 self.auto_indicator = True
             elif direction == "right":
-                Clock.schedule_once(lambda dt: self.bluCon.send_cmd("right"))
+                Clock.schedule_once(partial(self.bluCon.send_cmd, "right"))
                 self.auto_indicator = True
             elif direction == "u-turn":
                 if self.stearing == "right":
-                    Clock.schedule_once(lambda dt: self.bluCon.send_cmd("u-right"))
+                    Clock.schedule_once(partial(self.bluCon.send_cmd, "u-right"))
                 else:
-                    Clock.schedule_once(lambda dt: self.bluCon.send_cmd("u-left"))
+                    Clock.schedule_once(partial(self.bluCon.send_cmd, "u-left"))
                 self.auto_indicator = True
             elif direction == "straight":
-                Clock.schedule_once(lambda dt: self.bluCon.send_cmd("off"))
+                Clock.schedule_once(partial(self.bluCon.send_cmd, "off"))
                 self.auto_indicator = False
-        elif distance > 50 and self.auto_indicator:
-            Clock.schedule_once(lambda dt: self.bluCon.send_cmd("off"))
+        elif distance > 60 and self.auto_indicator:
+            Clock.schedule_once(partial(self.bluCon.send_cmd, "off"))
             self.auto_indicator = False
 
-    def api_callback(self, item):
+    def api_callback(self, item, *args):
         distance_final = None
         direction_final = None
         for i in item:
-            print(i[1])
+            #print(i[1])
             txt = str(i[1]).lower()
             distance_tmp = distance_in_meters(txt)
             direction_tmp = extract_direction(txt)
@@ -264,7 +267,15 @@ class NavIndicatorApp(MDApp):
             if distance_tmp and direction_tmp:
                 break # got both direction & distance to process
         if distance_final and direction_final:
-            Clock.schedule_once(lambda dt: self.process_nav_from_api(distance_final, direction_final))
+            Thread(
+                target=self.process_nav_from_api,
+                kwargs={
+                    "distance": distance_final,
+                    "direction": direction_final
+                },
+                daemon=True
+            ).start()
+            #Clock.schedule_once(lambda dt: self.process_nav_from_api(distance_final, direction_final))
         self.result_txt.text = f"{distance_final}, {direction_final}"
 
     def toggle_api_server(self):
@@ -298,25 +309,25 @@ class NavIndicatorApp(MDApp):
         #print(instance.md_bg_color)
         if instance.md_bg_color == [0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1.0]: # gray
             self.turn_off_all()
-            Clock.schedule_once(lambda dt: self.bluCon.send_cmd(choice))
+            Clock.schedule_once(partial(self.bluCon.send_cmd, choice))
             instance.md_bg_color = "orange"
             btn_txt_update.text = f"{choice} is ON"
             api_text = f"{choice} is ON for API"
         else:
             self.turn_off_all()
-            Clock.schedule_once(lambda dt: self.bluCon.send_cmd("off"))
+            Clock.schedule_once(partial(self.bluCon.send_cmd, "off"))
             instance.md_bg_color = "gray"
             btn_txt_update.text = "All OFF"
             api_text = f"{choice} is OFF for API"
         # Call the ESP API
-        Thread(
-            target=self.esp_api,
-            kwargs={
-                "title": "test_id",
-                "text": api_text
-            },
-            daemon=True
-        ).start()
+        #Thread(
+        #    target=self.esp_api,
+        #    kwargs={
+        #        "title": "test_id",
+        #        "text": api_text
+        #    },
+        #    daemon=True
+        #).start()
 
     def turn_off_all(self):
         btn_group = [

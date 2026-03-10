@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import uvicorn
+from kivy.clock import Clock
 from threading import Thread
 import asyncio
+from functools import partial
 
 # data formatting for request
 class NavData(BaseModel):
@@ -75,10 +77,8 @@ class PosiApiServer:
 async def process_nav_notification(item: NavData, request: Request):
     server: PosiApiServer = request.app.state.server
 
-    print(f"{item.title}, {item.text}, {item.sub_text},{item.ticker_text}, {item.big_text}")
-
     if server.kivyCallback:
-        server.kivyCallback(item)
+        Clock.schedule_once(partial(server.kivyCallback, item))
 
     return item
 

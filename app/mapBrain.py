@@ -32,14 +32,14 @@ def distance_in_meters(text):
 def extract_direction(text: str):
     text = text.lower()
 
-    patterns = {
-        "left": r"\b(left|turn left|keep left|slight left|sharp left)\b",
-        "right": r"\b(right|turn right|keep right|slight right|sharp right)\b",
-        "straight": r"\b(straight|continue|go straight|head straight)\b",
-        "u-turn": r"\b(u[- ]?turn)\b"
-    }
+    patterns = [
+        ("u-turn", r"\b(u[- ]?turn)\b"),
+        ("left", r"\b(left|turn left|keep left|slight left|sharp left)\b"),
+        ("right", r"\b(right|turn right|keep right|slight right|sharp right)\b"),
+        ("straight", r"\b(straight|continue|go straight|head straight)\b"),
+    ]
 
-    for direction, pattern in patterns.items():
+    for direction, pattern in patterns:
         if re.search(pattern, text):
             return direction
 
