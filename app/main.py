@@ -85,6 +85,8 @@ class NavIndicatorApp(MDApp):
             "mac": "",
             "api_url": "http://127.0.0.1:8089/",
             "server": "stop",
+            "bt": "none",
+            "stearing": "right",
         }
 
     def build(self):

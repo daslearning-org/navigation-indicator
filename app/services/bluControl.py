@@ -79,7 +79,7 @@ class BluetoothCon():
                 print(f"Error while conencting to ESP32: {e}")
         return stat
 
-    def send_cmd(self, cmd, *args):
+    def send_cmd(self, cmd:str, *args):
         stat = False
         if self.platform == "android" and self.connect_ok:
             try:
