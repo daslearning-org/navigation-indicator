@@ -20,9 +20,6 @@ from kivy.metrics import dp, sp
 from kivy.lang import Builder
 from kivy.properties import StringProperty, NumericProperty, ObjectProperty, BooleanProperty
 
-if platform == "android":
-    from jnius import autoclass, cast
-
 # IMPORTANT: Set this property for keyboard behavior
 Window.softinput_mode = "below_target"
 
@@ -43,10 +40,14 @@ from screens.setting import SettingsBox
 from screens.init_screen import ConfigInput
 from screens.nav_screen import NavMainBox
 
-# import local APIs
-from postApi import PosiApiServer
-from bluControl import BluetoothCon
-from mapBrain import distance_in_meters, extract_direction, clean_text
+# imprt local APIs / platform specific modules
+if platform == "android":
+    # local APIs are managed in service
+    from jnius import autoclass, cast
+else:
+    from services.postApi import PosiApiServer
+from services.bluControl import BluetoothCon
+from services.mapBrain import distance_in_meters, extract_direction, clean_text
 
 ## define custom kivymd classes
 class ContentNavigationDrawer(MDNavigationDrawerMenu):
@@ -80,6 +81,11 @@ class NavIndicatorApp(MDApp):
         self.bl_list_menu = None
         self.txt_dialog = None
         self.auto_indicator = False
+        self.config_template = {
+            "mac": "",
+            "api_url": "http://127.0.0.1:8089/",
+            "server": "stop",
+        }
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
@@ -99,8 +105,11 @@ class NavIndicatorApp(MDApp):
                 print(f"Android SDK: {sdk_version}")
             except Exception as e:
                 print(f"Could not check the android SDK version: {e}")
-            permissions = [Permission.BLUETOOTH, Permission.BLUETOOTH_ADMIN, Permission.BLUETOOTH_CONNECT, Permission.WAKE_LOCK]
-            request_permissions(permissions)
+            permissions = [Permission.BLUETOOTH, Permission.BLUETOOTH_ADMIN, Permission.BLUETOOTH_CONNECT, Permission.WAKE_LOCK, Permission.FOREGROUND_SERVICE]
+            try:
+                request_permissions(permissions)
+            except Exception as e:
+                print(f"Error during permission grant: {e}")
             # wake lock start to prevent sleep when app is active
             try:
                 self.acquire_wakelock()
@@ -129,14 +138,6 @@ class NavIndicatorApp(MDApp):
         self.app_api_server.set_kivy_caller(self.api_callback)
         self.bluCon = BluetoothCon(platform)
         self.blu_ok = False
-
-    def on_pause(self):
-        print("App paused")
-        # Returning True allows app to continue running
-        return True
-
-    def on_resume(self):
-        print("App resumed")
 
     def acquire_wakelock(self):
         if self.wake_lock:

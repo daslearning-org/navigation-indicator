@@ -4,6 +4,8 @@
 - Now automatic nagivation start threashold is 60m (earlier 50m).
 - Will show an error if Bluetooth connection fails.
 - Updated correct demo & documentation link.
+- Now app will use a service, so that app may not need to stay on foreground.
+- Adding android api 36 (android 16) support.
 - Some bug fixes.
 
 ### 0.0.2
