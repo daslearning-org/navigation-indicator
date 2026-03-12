@@ -3,6 +3,7 @@ os.environ['KIVY_GL_BACKEND'] = 'sdl2'
 import sys
 from threading import Thread
 from functools import partial
+import json
 
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -45,7 +46,8 @@ if platform == "android":
     # local APIs are managed in service
     from jnius import autoclass, cast
 else:
-    from services.postApi import PosiApiServer
+    #from services.postApi import PosiApiServer
+    from services.navService import nav_service_thread
 from services.bluControl import BluetoothCon
 from services.mapBrain import distance_in_meters, extract_direction, clean_text
 
@@ -81,11 +83,13 @@ class NavIndicatorApp(MDApp):
         self.bl_list_menu = None
         self.txt_dialog = None
         self.auto_indicator = False
+        self.resp_old_text = ""
         self.config_template = {
             "mac": "",
             "api_url": "http://127.0.0.1:8089/",
             "server": "stop",
             "bt": "none",
+            "cmd": "none",
             "stearing": "right",
         }
 
@@ -128,25 +132,34 @@ class NavIndicatorApp(MDApp):
             except Exception:
                 self.external_storage = os.path.abspath("/storage/emulated/0/")
             # start the listner service on Android
-            service = autoclass('in.daslearning.navindi.Navindisvc')
-            argument = ''
-            service.start(context, argument)
+            try:
+                service = autoclass('in.daslearning.navindi.ServiceNavindisvc')
+                argument = ''
+                service.start(context, argument)
+            except Exception as e:
+                print(f"Error while starting android service: {e}")
         # non android platforms
         else:
             self.internal_storage = os.path.expanduser("~")
             self.external_storage = os.path.expanduser("~")
-            self.config_dir = os.path.join(self.user_data_dir, 'config')
+            self.config_dir = os.path.join(base_path, 'services', 'config')
+            # start the listner service on non-android OS
+            Thread(target=nav_service_thread, daemon=True).start()
 
         # items for all OS
         os.makedirs(self.config_dir, exist_ok=True)
         self.config_path = os.path.join(self.config_dir, 'config.json')
-        self.api_url = "http://127.0.0.1:8089/nav/" # to be updated as using a config file
+        self.resp_path = os.path.join(self.config_dir, 'resp.json')
+        self.api_url = self.config_template["api_url"]
+        with open(self.config_path, "w") as cf:
+            json.dump(self.config_template, cf)
         # set app specific objects / vars
         self.result_txt = self.root.ids.nav_main_box.ids.result_text
-        self.app_api_server = PosiApiServer()
-        self.app_api_server.set_kivy_caller(self.api_callback)
+        #self.app_api_server = PosiApiServer()
+        #self.app_api_server.set_kivy_caller(self.api_callback)
         self.bluCon = BluetoothCon(platform)
         self.blu_ok = False
+        Thread(target=self.dir_resp_checker, daemon=True).start()
 
     def acquire_wakelock(self):
         if self.wake_lock:
@@ -169,8 +182,13 @@ class NavIndicatorApp(MDApp):
             self.wake_lock = None
             print("WakeLock released")
 
+    def write_config(self):
+        with open(self.config_path, "w") as cf:
+            json.dump(self.config_template, cf)
+
     def set_stearing_pos(self, choice:str):
         self.stearing = choice
+        self.config_template["stearing"] = choice
         print(self.stearing)
 
     def list_bl_devices(self, button):
@@ -214,19 +232,47 @@ class NavIndicatorApp(MDApp):
         tmp_mac = tmp_mac.strip()
         if len(tmp_mac) == 17:
             self.bl_mac = tmp_mac
-            try:
-                self.blu_ok = self.bluCon.connect_device(self.bl_mac)
-            except Exception as e:
-                print(f"Error in bluetooth connection: {e}")
-            if self.blu_ok:
-                self.show_toast_msg("Bluetooth connection success")
-            else:
-                self.show_toast_msg("Bluetooth connection failed!", is_error=True)
+            self.config_template["mac"] = tmp_mac
+            self.config_template["bt"] = "connect"
+            self.write_config()
+            Thread(target=self.bt_connect_checker, daemon=True).start()
         else:
             self.show_toast_msg("Please enter a valid BT MAC or choose one from Paired Devices!", is_error=True)
 
+    def bt_connect_checker(self):
+        resp = None
+        if os.path.exists(self.resp_path):
+            with open(self.resp_path, "r") as rf:
+                resp = json.load(rf)
+            if resp:
+                resp_bt = resp.get("bt", "")
+                if resp_bt == "connected":
+                    Clock.schedule_once(lambda dt: self.show_toast_msg("Bluetooth is connected"))
+                    self.blu_ok = True
+                elif resp_bt == "failed":
+                    Clock.schedule_once(lambda dt: self.show_toast_msg("Bluetooth connection failed!", is_error=True))
+                elif resp_bt == "none":
+                    Clock.schedule_once(lambda dt: self.show_toast_msg("Connection is not yet complete...", is_error=True, duration=2))
+
+    def dir_resp_checker(self):
+        import time
+        while True:
+            resp = None
+            if os.path.exists(self.resp_path):
+                with open(self.resp_path, "r") as rf:
+                    resp = json.load(rf)
+                if resp:
+                    resp_distance = resp.get("distance", "")
+                    resp_direction = resp.get("direction", "")
+                    current_text = f"{resp_distance}, {resp_direction}"
+                    if self.resp_old_text != current_text:
+                        self.resp_old_text = current_text
+                        self.result_txt.text = current_text
+            time.sleep(1)
+
     def go_to_nav(self, confirm=False, instance=None):
         if confirm or self.blu_ok:
+            Thread(target=self.write_config, daemon=True).start() # to write the stearing position
             self.root.ids.screen_manager.current = "navIndiScr"
             self.txt_dialog_closer(instance)
         else:
@@ -250,7 +296,7 @@ class NavIndicatorApp(MDApp):
                 buttons
             )
 
-    # automation logic
+    # automation logic (now it is managed via service)
     def process_nav_from_api(self, distance, direction):
         if distance > 0 and distance <= 60:
             if direction == "left":
@@ -301,19 +347,23 @@ class NavIndicatorApp(MDApp):
     def toggle_api_server(self):
         toggle_btn = self.root.ids.nav_main_box.ids.start_app_server_btn
         if self.is_api_server_on:
-            self.app_api_server.stop()
+            #self.app_api_server.stop()
+            self.config_template["server"] = "stop"
+            self.write_config()
             self.is_api_server_on = False
             toggle_btn.text = "Sart Server"
             toggle_btn.icon = "play"
             toggle_btn.md_bg_color = "gray"
         else:
-            self.app_api_server.start()
+            #self.app_api_server.start()
+            self.config_template["server"] = "start"
+            self.write_config()
             self.is_api_server_on = True
             toggle_btn.text = "Stop Server"
             toggle_btn.icon = "stop"
             toggle_btn.md_bg_color = "orange"
 
-    def esp_api(self, title:str="", text:str=""): # to be updated with actual ESP API later
+    def internal_api_call(self, title:str="", text:str=""): # to be updated with actual ESP API later
         import requests
         try:
             requests.post(
@@ -323,25 +373,26 @@ class NavIndicatorApp(MDApp):
         except Exception as e:
             print(f"An API error: {e}")
 
-    def indicatior_light(self, instance, choice:str = "None"):
+    def indicatior_light(self, instance, choice:str = "none"):
         btn_txt_update = self.root.ids.nav_main_box.ids.btn_text
         api_text = ""
         #print(instance.md_bg_color)
         if instance.md_bg_color == [0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1.0]: # gray
             self.turn_off_all()
-            Clock.schedule_once(partial(self.bluCon.send_cmd, choice))
+            self.config_template["cmd"] = choice
             instance.md_bg_color = "orange"
             btn_txt_update.text = f"{choice} is ON"
             api_text = f"{choice} is ON for API"
         else:
             self.turn_off_all()
-            Clock.schedule_once(partial(self.bluCon.send_cmd, "off"))
+            self.config_template["cmd"] = "off"
             instance.md_bg_color = "gray"
             btn_txt_update.text = "All OFF"
             api_text = f"{choice} is OFF for API"
-        # Call the ESP API
+        self.write_config()
+        # Call the Local API for debugging
         #Thread(
-        #    target=self.esp_api,
+        #    target=self.internal_api_call,
         #    kwargs={
         #        "title": "test_id",
         #        "text": api_text
