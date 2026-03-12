@@ -57,6 +57,7 @@ class BluetoothCon():
         return result
 
     def connect_device(self, mac):
+        print(f"MAC connect request: {mac}")
         stat = False
         if self.platform == "android":
             try:

@@ -24,6 +24,7 @@ resp_template = {
 }
 api_started = False
 blue_conn_stat = False
+auto_indicator = False
 config_data = {}
 stearing = "right"
 last_choice = "none"
@@ -31,9 +32,11 @@ last_choice = "none"
 if platform == "android":
     from jnius import autoclass, cast
     try:
-        context = autoclass('org.kivy.android.PythonActivity').mActivity
+        service = autoclass('org.kivy.android.PythonService').mService
+        context = service.getApplicationContext()
         android_path = context.getExternalFilesDir(None).getAbsolutePath()
         config_dir = join(android_path, 'config')
+        Log = autoclass('android.util.Log')
     except Exception as e:
         config_dir = abspath("/storage/emulated/0/Android/data/in.daslearning.navindi/files/config/")
         print(f"Error while accessing app internal path: {e}")
@@ -51,6 +54,8 @@ resp_file = join(config_dir, "resp.json")
 
 # functions
 def process_nav_from_api(distance, direction):
+    print(f"Bluetooth command: {distance}, {direction}")
+    global auto_indicator
     if distance > 0 and distance <= 60:
         if direction == "left":
             bluCon.send_cmd("left")
@@ -82,7 +87,7 @@ def api_nav_listner(item, *args):
     distance_final = None
     direction_final = None
     for i in item:
-        #print(i[1])
+        print(i[1])
         txt = str(i[1]).lower()
         distance_tmp = distance_in_meters(txt)
         direction_tmp = extract_direction(txt)
@@ -95,15 +100,19 @@ def api_nav_listner(item, *args):
     if distance_final and direction_final:
         resp_template["direction"] = direction_final
         resp_template["distance"] = distance_final
+        print(f"Got from API: {distance_final}, {direction_final}")
+        if platform == "android":
+            Log.i("NAV_SERVICE: ", f"{distance_final}, {direction_final}")
+        process_nav_from_api(distance=distance_final, direction=direction_final)
         Thread(target=write_resp, daemon=True).start()
-        Thread(
-            target=process_nav_from_api,
-            kwargs={
-                "distance": distance_final,
-                "direction": direction_final
-            },
-            daemon=True
-        ).start()
+        #Thread(
+        #    target=process_nav_from_api,
+        #    kwargs={
+        #        "distance": distance_final,
+        #        "direction": direction_final
+        #    },
+        #    daemon=True
+        #).start()
 
 def write_resp():
     global resp_template
@@ -113,8 +122,11 @@ def write_resp():
 def read_config_file():
     global config_data
     if exists(config_file):
-        with open(config_file, "r") as cf:
-            config_data = json.load(cf)
+        try:
+            with open(config_file, "r") as cf:
+                config_data = json.load(cf)
+        except Exception as e:
+            print(f"Error while reading config from svc: {e}")
 
 def api_server_control(api_stat: str):
     global api_started
@@ -140,7 +152,7 @@ def connect_bluetooth():
                 resp_template["bt"] = "connected"
             else:
                 resp_template["bt"] = "failed"
-            Thread(target=write_resp, daemon=True).start()
+            write_resp()
 
 def nav_service_thread():
     #global vars
@@ -181,44 +193,15 @@ def nav_service_thread():
         config_stear = config_data.get("stearing", "right")
         if config_stear != stearing:
             stearing = config_stear
+        
+        keep_alive = config_data.get("alive", "true")
+        if keep_alive == "true":
+            pass
+        else:
+            break # stop the service
 
         # put a sleep
         time.sleep(0.5)
 
 if __name__ == "__main__":
-
-    # set the api callback
-    app_api_server.set_kivy_caller(api_nav_listner)
-
-    # keep alive the service & check for requests
-    while True:
-        read_config_file()
-
-        # handle bluetooth connect
-        mac_addr = config_data.get("mac", "")
-        bt_req = config_data.get("bt", "")
-        if not blue_conn_stat and len(mac_addr) == 17 and bt_req == "connect":
-            blue_conn_stat = bluCon.connect_device(mac_addr)
-        
-        #handle bt commands
-        choice = config_data.get("cmd", "none")
-        if choice != "none" and last_choice != choice and blue_conn_stat:
-            bluCon.send_cmd(choice)
-            last_choice = choice
-            print(f"manual: {choice}")
-
-        #handle api server
-        server_stat = config_data.get("server", "")
-        if not api_started and server_stat == "start":
-            api_server_control("start")
-        elif api_started and server_stat == "stop":
-            api_server_control("stop")
-
-        # handle other params
-        config_stear = config_data.get("stearing", "right")
-        if config_stear != stearing:
-            stearing = config_stear
-
-        # put a sleep
-        time.sleep(0.5)
-
+    nav_service_thread()

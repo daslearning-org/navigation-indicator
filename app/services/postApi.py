@@ -88,7 +88,13 @@ async def process_nav_notification(item: NavData, request: Request):
     server: PosiApiServer = request.app.state.server
 
     if server.kivyCallback:
-        Clock.schedule_once(partial(server.kivyCallback, item))
+        Thread(
+            target=server.kivyCallback,
+            kwargs={
+                "item": item
+            },
+            daemon=True
+        ).start()
 
     return item
 

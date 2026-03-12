@@ -91,6 +91,7 @@ class NavIndicatorApp(MDApp):
             "bt": "none",
             "cmd": "none",
             "stearing": "right",
+            "alive": "true",
         }
 
     def build(self):
@@ -133,9 +134,13 @@ class NavIndicatorApp(MDApp):
                 self.external_storage = os.path.abspath("/storage/emulated/0/")
             # start the listner service on Android
             try:
-                service = autoclass('in.daslearning.navindi.ServiceNavindisvc')
-                argument = ''
-                service.start(context, argument)
+                #PythonService = autoclass('org.kivy.android.PythonService')
+                #PythonService.mService.setAutoRestartService(True)
+                self.service = autoclass('in.daslearning.navindi.ServiceNavindisvc')
+                #argument = ''
+                argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
+                #service.start(context, argument)
+                self.service.start(context, 'small_icon', 'navIndi-T', 'NavNotContent' , argument)
             except Exception as e:
                 print(f"Error while starting android service: {e}")
         # non android platforms
@@ -240,6 +245,8 @@ class NavIndicatorApp(MDApp):
             self.show_toast_msg("Please enter a valid BT MAC or choose one from Paired Devices!", is_error=True)
 
     def bt_connect_checker(self):
+        import time
+        time.sleep(4)
         resp = None
         if os.path.exists(self.resp_path):
             with open(self.resp_path, "r") as rf:
