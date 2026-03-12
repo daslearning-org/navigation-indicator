@@ -3,8 +3,8 @@ from kivy.utils import platform
 
 from os.path import join, abspath, exists
 from threading import Thread
-import asyncio
-from functools import partial
+#import asyncio
+#from functools import partial
 import json
 import time
 
@@ -53,7 +53,7 @@ def process_nav_from_api(distance, direction):
         bluCon.send_cmd("off")
         auto_indicator = False
 
-def api_nav_listner(item):
+def api_nav_listner(item, *args):
     distance_final = None
     direction_final = None
     for i in item:
@@ -99,10 +99,12 @@ def connect_bluetooth():
         if len(mac_addr) == 17:
             blue_conn_stat = bluCon.connect_device(mac_addr)
 
-def service_listner():
-    global config_data
-    global api_started
-    global blue_conn_stat
+if __name__ == "__main__":
+
+    # set the api callback
+    app_api_server.set_kivy_caller(api_nav_listner)
+
+    # keep alive the service & check for requests
     while True:
         read_config_file()
 
@@ -113,6 +115,15 @@ def service_listner():
         
         #handle api server
         server_stat = config_data.get("server", "")
+        if not api_started and server_stat == "start":
+            api_server_control("start")
+        elif api_started and server_stat == "stop":
+            api_server_control("stop")
+
+        # handle other params
+        config_stear = config_data.get("stearing", "right")
+        if config_stear != stearing:
+            stearing = config_stear
 
         # put a sleep
         time.sleep(2)

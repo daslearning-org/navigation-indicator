@@ -95,7 +95,7 @@ class NavIndicatorApp(MDApp):
         return Builder.load_file(kv_file_path)
 
     def on_start(self):
-        # paths setup
+        # OS specific setups
         if platform == "android":
             #from android import activity
             # permissions
@@ -127,10 +127,17 @@ class NavIndicatorApp(MDApp):
                 self.external_storage = Environment.getExternalStorageDirectory().getAbsolutePath()
             except Exception:
                 self.external_storage = os.path.abspath("/storage/emulated/0/")
+            # start the listner service on Android
+            service = autoclass('in.daslearning.navindi.Navindisvc')
+            argument = ''
+            service.start(context, argument)
+        # non android platforms
         else:
             self.internal_storage = os.path.expanduser("~")
             self.external_storage = os.path.expanduser("~")
             self.config_dir = os.path.join(self.user_data_dir, 'config')
+
+        # items for all OS
         os.makedirs(self.config_dir, exist_ok=True)
         self.config_path = os.path.join(self.config_dir, 'config.json')
         self.api_url = "http://127.0.0.1:8089/nav/" # to be updated as using a config file

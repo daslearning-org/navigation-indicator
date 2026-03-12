@@ -55,7 +55,7 @@ icon.filename = %(source.dir)s/data/images/favicont512.png
 orientation = portrait
 
 # (list) List of service to declare
-#services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
+services = navindisvc:services/navService.py
 
 #
 # OSX Specific
