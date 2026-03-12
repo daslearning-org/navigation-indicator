@@ -112,7 +112,14 @@ class NavIndicatorApp(MDApp):
                 print(f"Android SDK: {sdk_version}")
             except Exception as e:
                 print(f"Could not check the android SDK version: {e}")
-            permissions = [Permission.BLUETOOTH, Permission.BLUETOOTH_ADMIN, Permission.BLUETOOTH_CONNECT, Permission.WAKE_LOCK, Permission.FOREGROUND_SERVICE]
+            permissions = [
+                            Permission.BLUETOOTH, 
+                            Permission.BLUETOOTH_ADMIN, 
+                            Permission.BLUETOOTH_CONNECT, 
+                            Permission.WAKE_LOCK, 
+                            Permission.FOREGROUND_SERVICE,
+                            Permission.POST_NOTIFICATIONS,
+                        ]
             try:
                 request_permissions(permissions)
             except Exception as e:
@@ -139,8 +146,8 @@ class NavIndicatorApp(MDApp):
                 self.service = autoclass('in.daslearning.navindi.ServiceNavindisvc')
                 #argument = ''
                 argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
-                #service.start(context, argument)
-                self.service.start(context, 'small_icon', 'navIndi-T', 'NavNotContent' , argument)
+                #self.service.start(context, argument)
+                self.service.start(context, '', 'navIndi-T', 'NavNotiContent' , argument)
             except Exception as e:
                 print(f"Error while starting android service: {e}")
         # non android platforms
