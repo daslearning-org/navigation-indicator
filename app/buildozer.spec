@@ -54,8 +54,8 @@ icon.filename = %(source.dir)s/data/images/favicont512.png
 # Valid options are: landscape, portrait, portrait-reverse or landscape-reverse
 orientation = portrait
 
-# (list) List of service to declare
-services = navindisvc:services/navService.py
+# (list) List of service to declare, doc: https://github.com/kivy/python-for-android/blob/develop/doc/source/services.rst
+services = navindisvc:services/navService.py:foreground:foregroundServiceType=location
 
 #
 # OSX Specific
@@ -97,7 +97,7 @@ fullscreen = 0
 # (list) Permissions
 # (See https://developer.android.com/reference/android/Manifest.permission for all the supported syntaxes and properties)
 #android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
-android.permissions = android.permission.INTERNET, android.permission.BLUETOOTH, android.permission.BLUETOOTH_ADMIN, android.permission.BLUETOOTH_CONNECT, android.permission.WAKE_LOCK, android.permission.FOREGROUND_SERVICE, android.permission.POST_NOTIFICATIONS
+android.permissions = android.permission.INTERNET, android.permission.BLUETOOTH, android.permission.BLUETOOTH_ADMIN, android.permission.BLUETOOTH_CONNECT, android.permission.WAKE_LOCK, android.permission.FOREGROUND_SERVICE, android.permission.POST_NOTIFICATIONS, android.permission.FOREGROUND_SERVICE_LOCATION
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host

@@ -141,18 +141,16 @@ def api_server_control(api_stat: str):
         resp_template["server"] = "started"
     Thread(target=write_resp, daemon=True).start()
 
-def connect_bluetooth():
+def connect_bluetooth(mac_addr:str):
     global blue_conn_stat
     global resp_template
-    if config_data:
-        mac_addr = config_data.get("mac", "")
-        if len(mac_addr) == 17:
-            blue_conn_stat = bluCon.connect_device(mac_addr)
-            if blue_conn_stat:
-                resp_template["bt"] = "connected"
-            else:
-                resp_template["bt"] = "failed"
-            write_resp()
+    if len(mac_addr) == 17:
+        blue_conn_stat = bluCon.connect_device(mac_addr)
+        if blue_conn_stat:
+            resp_template["bt"] = "connected"
+        else:
+            resp_template["bt"] = "failed"
+        write_resp()
 
 def nav_service_thread():
     #global vars
@@ -161,6 +159,8 @@ def nav_service_thread():
     global blue_conn_stat
     global config_data
     global last_choice
+
+    write_resp() # blank the old file
 
     # set the api callback
     app_api_server.set_kivy_caller(api_nav_listner)
@@ -173,7 +173,7 @@ def nav_service_thread():
         mac_addr = config_data.get("mac", "")
         bt_req = config_data.get("bt", "")
         if not blue_conn_stat and len(mac_addr) == 17 and bt_req == "connect":
-            blue_conn_stat = bluCon.connect_device(mac_addr)
+            connect_bluetooth(mac_addr)
         
         #handle bt commands from buttons
         choice = config_data.get("cmd", "none")
@@ -204,4 +204,5 @@ def nav_service_thread():
         time.sleep(0.5)
 
 if __name__ == "__main__":
+    # the main listener loop
     nav_service_thread()

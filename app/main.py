@@ -83,7 +83,7 @@ class NavIndicatorApp(MDApp):
         self.bl_list_menu = None
         self.txt_dialog = None
         self.auto_indicator = False
-        self.resp_old_text = ""
+        self.resp_old_text = "none, none"
         self.config_template = {
             "mac": "",
             "api_url": "http://127.0.0.1:8089/",
@@ -119,6 +119,7 @@ class NavIndicatorApp(MDApp):
                             Permission.WAKE_LOCK, 
                             Permission.FOREGROUND_SERVICE,
                             Permission.POST_NOTIFICATIONS,
+                            Permission.ACCESS_FINE_LOCATION,
                         ]
             try:
                 request_permissions(permissions)
@@ -141,13 +142,12 @@ class NavIndicatorApp(MDApp):
                 self.external_storage = os.path.abspath("/storage/emulated/0/")
             # start the listner service on Android
             try:
-                #PythonService = autoclass('org.kivy.android.PythonService')
-                #PythonService.mService.setAutoRestartService(True)
                 self.service = autoclass('in.daslearning.navindi.ServiceNavindisvc')
-                #argument = ''
-                argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
+                argument = ''
+                #argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
                 #self.service.start(context, argument)
-                self.service.start(context, '', 'navIndi-T', 'NavNotiContent' , argument)
+                self.service.start(context, 'ic_launcher', 'Navigation Indicator', 'Service Running' , argument)
+                #self.start_service()
             except Exception as e:
                 print(f"Error while starting android service: {e}")
         # non android platforms
@@ -172,6 +172,14 @@ class NavIndicatorApp(MDApp):
         self.bluCon = BluetoothCon(platform)
         self.blu_ok = False
         Thread(target=self.dir_resp_checker, daemon=True).start()
+
+    def start_service(self):
+        from android import mActivity
+        Intent = autoclass('android.content.Intent')
+        PythonService = autoclass('org.kivy.android.PythonService')
+        intent = Intent(mActivity, PythonService)
+        intent.putExtra("serviceStartAsForeground", True)
+        mActivity.startForegroundService(intent)
 
     def acquire_wakelock(self):
         if self.wake_lock:
@@ -253,7 +261,7 @@ class NavIndicatorApp(MDApp):
 
     def bt_connect_checker(self):
         import time
-        time.sleep(4)
+        time.sleep(2)
         resp = None
         if os.path.exists(self.resp_path):
             with open(self.resp_path, "r") as rf:
@@ -267,6 +275,7 @@ class NavIndicatorApp(MDApp):
                     Clock.schedule_once(lambda dt: self.show_toast_msg("Bluetooth connection failed!", is_error=True))
                 elif resp_bt == "none":
                     Clock.schedule_once(lambda dt: self.show_toast_msg("Connection is not yet complete...", is_error=True, duration=2))
+                    self.bt_connect_checker()
 
     def dir_resp_checker(self):
         import time
