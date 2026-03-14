@@ -204,5 +204,12 @@ def nav_service_thread():
         time.sleep(0.5)
 
 if __name__ == "__main__":
+    # start the service from here
+    #if platform == "android":
+    #    PythonService = autoclass('org.kivy.android.PythonService')
+    #    service = PythonService.mService
+    #    service.setAutoRestartService(True)
+    #    service.setForeground(True)
+    
     # the main listener loop
     nav_service_thread()

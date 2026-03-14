@@ -142,12 +142,14 @@ class NavIndicatorApp(MDApp):
                 self.external_storage = os.path.abspath("/storage/emulated/0/")
             # start the listner service on Android
             try:
-                self.service = autoclass('in.daslearning.navindi.ServiceNavindisvc')
-                argument = ''
+                #PythonActivity = autoclass('org.kivy.android.PythonActivity')
+                #mActivity = PythonActivity.mActivity
+                #self.service = autoclass('in.daslearning.navindi.ServiceNavindisvc')
+                #argument = ''
                 #argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
-                #self.service.start(context, argument)
-                self.service.start(context, 'ic_launcher', 'Navigation Indicator', 'Service Running' , argument)
-                #self.start_service()
+                #self.service.start(mActivity, argument)
+                #self.service.start(mActivity, 'icon', 'Navigation Indicator', 'Service Running' , argument)
+                self.start_service()
             except Exception as e:
                 print(f"Error while starting android service: {e}")
         # non android platforms
@@ -174,12 +176,25 @@ class NavIndicatorApp(MDApp):
         Thread(target=self.dir_resp_checker, daemon=True).start()
 
     def start_service(self):
-        from android import mActivity
-        Intent = autoclass('android.content.Intent')
-        PythonService = autoclass('org.kivy.android.PythonService')
-        intent = Intent(mActivity, PythonService)
-        intent.putExtra("serviceStartAsForeground", True)
-        mActivity.startForegroundService(intent)
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
+        context = PythonActivity.mActivity
+        intent = autoclass('android.content.Intent')(
+            context,
+            NavindiService
+        )
+        context.startForegroundService(intent)
+        print(f"Started the service: {NavindiService}")
+
+    def stop_service(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
+        context = PythonActivity.mActivity
+        intent = autoclass('android.content.Intent')(
+            context,
+            NavindiService
+        )
+        context.stopService(intent)
 
     def acquire_wakelock(self):
         if self.wake_lock:

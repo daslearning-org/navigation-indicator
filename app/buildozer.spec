@@ -55,7 +55,7 @@ icon.filename = %(source.dir)s/data/images/favicont512.png
 orientation = portrait
 
 # (list) List of service to declare, doc: https://github.com/kivy/python-for-android/blob/develop/doc/source/services.rst
-services = navindisvc:services/navService.py:foreground:foregroundServiceType=location
+#services = navindisvc:services/navService.py:foreground:foregroundServiceType=location
 
 #
 # OSX Specific
@@ -97,7 +97,7 @@ fullscreen = 0
 # (list) Permissions
 # (See https://developer.android.com/reference/android/Manifest.permission for all the supported syntaxes and properties)
 #android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
-android.permissions = android.permission.INTERNET, android.permission.BLUETOOTH, android.permission.BLUETOOTH_ADMIN, android.permission.BLUETOOTH_CONNECT, android.permission.WAKE_LOCK, android.permission.FOREGROUND_SERVICE, android.permission.POST_NOTIFICATIONS, android.permission.FOREGROUND_SERVICE_LOCATION
+android.permissions = android.permission.INTERNET, android.permission.BLUETOOTH, android.permission.BLUETOOTH_ADMIN, android.permission.BLUETOOTH_CONNECT, android.permission.WAKE_LOCK, android.permission.FOREGROUND_SERVICE, android.permission.POST_NOTIFICATIONS, android.permission.FOREGROUND_SERVICE_LOCATION, android.permission.ACCESS_FINE_LOCATION
 
 # (list) features (adds uses-feature -tags to manifest)
 #android.features = android.hardware.usb.host
@@ -154,9 +154,13 @@ android.accept_sdk_license = True
 # use that parameter to provide a filename from where to load your custom XML code
 #android.extra_manifest_xml = %(source.dir)s/xml_required.xml
 
-# (str) Extra xml to write directly inside the <manifest><application> tag of AndroidManifest.xml
+# (str) Extra xml to write directly inside the <manifest><application> tag's arguments of AndroidManifest.xml
 # use that parameter to provide a filename from where to load your custom XML arguments:
-#android.extra_manifest_application_arguments = %(source.dir)s/manifest_update.xml
+#android.extra_manifest_application_arguments = %(source.dir)s/navscv.xml
+
+# (str) Extra xml element to write directly inside the <manifest><application> tag as an element of AndroidManifest.xml
+# use that parameter to provide a filename from where to load your custom XML arguments:
+android.extra_manifest_application_element = %(source.dir)s/navscv.xml
 
 # (str) Full name including package path of the Java class that implements Python Service
 # use that parameter to set custom Java class which extends PythonService
@@ -182,7 +186,7 @@ android.accept_sdk_license = True
 
 # (list) List of Java files to add to the android project (can be java or a
 # directory containing the files)
-#android.add_src = ./javaSrc
+android.add_src = ./javaSrc
 
 # (list) Android AAR archives to add
 #android.add_aars =
