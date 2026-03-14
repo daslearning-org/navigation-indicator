@@ -2,6 +2,8 @@ import os
 os.environ['KIVY_GL_BACKEND'] = 'sdl2'
 import sys
 from threading import Thread
+from functools import partial
+import json
 
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -19,14 +21,11 @@ from kivy.metrics import dp, sp
 from kivy.lang import Builder
 from kivy.properties import StringProperty, NumericProperty, ObjectProperty, BooleanProperty
 
-if platform == "android":
-    from jnius import autoclass, cast
-
 # IMPORTANT: Set this property for keyboard behavior
 Window.softinput_mode = "below_target"
 
 ## Global definitions
-__version__ = "0.0.2" # App version
+__version__ = "0.0.3" # App version
 
 # Determine the base path for your application's resources
 if getattr(sys, 'frozen', False):
@@ -42,10 +41,15 @@ from screens.setting import SettingsBox
 from screens.init_screen import ConfigInput
 from screens.nav_screen import NavMainBox
 
-# import local APIs
-from postApi import PosiApiServer
-from bluControl import BluetoothCon
-from mapBrain import distance_in_meters, extract_direction, clean_text
+# imprt local APIs / platform specific modules
+if platform == "android":
+    # local APIs are managed in service
+    from jnius import autoclass, cast
+else:
+    #from services.postApi import PosiApiServer
+    from services.navService import nav_service_thread
+from services.bluControl import BluetoothCon
+from services.mapBrain import distance_in_meters, extract_direction, clean_text
 
 ## define custom kivymd classes
 class ContentNavigationDrawer(MDNavigationDrawerMenu):
@@ -75,10 +79,21 @@ class NavIndicatorApp(MDApp):
         super().__init__(**kwargs)
         self.stearing = "right"
         self.bl_mac = ""
+        self.service = None
         self.wake_lock = None
         self.bl_list_menu = None
         self.txt_dialog = None
         self.auto_indicator = False
+        self.resp_old_text = "none, none"
+        self.config_template = {
+            "mac": "",
+            "api_url": "http://127.0.0.1:8089/",
+            "server": "stop",
+            "bt": "none",
+            "cmd": "none",
+            "stearing": "right",
+            "alive": "true",
+        }
 
     def build(self):
         self.theme_cls.primary_palette = "Blue"
@@ -86,23 +101,31 @@ class NavIndicatorApp(MDApp):
         return Builder.load_file(kv_file_path)
 
     def on_start(self):
-        # paths setup
+        # OS specific setups
         if platform == "android":
+            #from android import activity
             # permissions
             from android.permissions import check_permission, request_permissions, Permission
-            sdk_version = 28
+            self.sdk_version = 28
             try:
                 VERSION = autoclass('android.os.Build$VERSION')
-                sdk_version = VERSION.SDK_INT
-                print(f"Android SDK: {sdk_version}")
+                self.sdk_version = VERSION.SDK_INT
+                print(f"Android SDK: {self.sdk_version}")
             except Exception as e:
                 print(f"Could not check the android SDK version: {e}")
-            permissions = [Permission.BLUETOOTH, Permission.BLUETOOTH_ADMIN, Permission.BLUETOOTH_CONNECT, Permission.WAKE_LOCK]
-            request_permissions(permissions)
+            permissions = [
+                            Permission.BLUETOOTH, 
+                            Permission.BLUETOOTH_ADMIN, 
+                            Permission.BLUETOOTH_CONNECT, 
+                            Permission.WAKE_LOCK, 
+                            Permission.FOREGROUND_SERVICE,
+                            Permission.POST_NOTIFICATIONS,
+                            Permission.ACCESS_FINE_LOCATION,
+                        ]
             try:
-                self.acquire_wakelock()
+                request_permissions(permissions)
             except Exception as e:
-                self.show_toast_msg(f"Screen on setup error: {e}", is_error=True)
+                print(f"Error during permission grant: {e}")
             # paths on android
             context = autoclass('org.kivy.android.PythonActivity').mActivity
             android_path = context.getExternalFilesDir(None).getAbsolutePath()
@@ -113,34 +136,89 @@ class NavIndicatorApp(MDApp):
                 self.external_storage = Environment.getExternalStorageDirectory().getAbsolutePath()
             except Exception:
                 self.external_storage = os.path.abspath("/storage/emulated/0/")
+            # start the listner service on Android
+            try:
+                self.start_service()
+            except Exception as e:
+                print(f"Error while starting android service: {e}")
+        # non android platforms
         else:
             self.internal_storage = os.path.expanduser("~")
             self.external_storage = os.path.expanduser("~")
-            self.config_dir = os.path.join(self.user_data_dir, 'config')
+            self.config_dir = os.path.join(base_path, 'services', 'config')
+            # start the listner service on non-android OS
+            Thread(target=nav_service_thread, daemon=True).start()
+
+        # items for all OS
         os.makedirs(self.config_dir, exist_ok=True)
         self.config_path = os.path.join(self.config_dir, 'config.json')
-        self.api_url = "http://127.0.0.1:8089/nav/" # to be updated as using a config file
+        self.resp_path = os.path.join(self.config_dir, 'resp.json')
+        self.api_url = self.config_template["api_url"]
+        with open(self.config_path, "w") as cf:
+            json.dump(self.config_template, cf)
         # set app specific objects / vars
         self.result_txt = self.root.ids.nav_main_box.ids.result_text
-        self.app_api_server = PosiApiServer()
-        self.app_api_server.set_kivy_caller(self.api_callback)
+        #self.app_api_server = PosiApiServer()
+        #self.app_api_server.set_kivy_caller(self.api_callback)
         self.bluCon = BluetoothCon(platform)
         self.blu_ok = False
+        Thread(target=self.dir_resp_checker, daemon=True).start()
+
+    def start_service_java(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        activity = PythonActivity.mActivity
+        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
+        intent = Intent(activity, NavindiService)
+        activity.startForegroundService(intent) # startService() for android api 25 & older
+        print("Started the service")
+        try:
+            argument = NavindiService.getIntent().getStringExtra("serviceArgument")
+            print(f"Arg from java: {argument}")
+        except Exception as e:
+            print(f"Error accessing service arg: {e}")
+
+    def stop_service_java(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        activity = PythonActivity.mActivity
+        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
+        intent = Intent(activity, NavindiService)
+        activity.stopService(intent)
+        print("Stopped the service")
+
+    def start_service(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        mActivity = PythonActivity.mActivity
+        service = autoclass('in.daslearning.navindi.ServiceNavindiservice')
+        argument = ''
+        #argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
+        service.start(mActivity, argument)
+        #service.start(mActivity, 'icon', 'Navigation Indicator', 'Service Running' , argument)
+
+    def stop_service(self):
+        ServiceNavindisvc = autoclass('in.daslearning.navindi.ServiceNavindiservice')
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        mActivity = PythonActivity.mActivity
+        ServiceNavindisvc.stop(mActivity)
 
     def acquire_wakelock(self):
         if self.wake_lock:
             return  # already acquired
-        PythonActivity = autoclass("org.kivy.android.PythonActivity")
-        Context = autoclass("android.content.Context")
-        activity = PythonActivity.mActivity
-        PowerManager = autoclass("android.os.PowerManager")
-        power_manager = cast(PowerManager, activity.getSystemService(Context.POWER_SERVICE))
-        # Create wakelock (use PowerManager.FULL_WAKE_LOCK for full wakelock)
-        self.wake_lock = power_manager.newWakeLock(
-            PowerManager.FULL_WAKE_LOCK, "MyApp::WakeLockTag"
-        )
-        self.wake_lock.acquire()
-        print("WakeLock acquired")
+        try:
+            PythonActivity = autoclass("org.kivy.android.PythonActivity")
+            Context = autoclass("android.content.Context")
+            activity = PythonActivity.mActivity
+            PowerManager = autoclass("android.os.PowerManager")
+            power_manager = cast(PowerManager, activity.getSystemService(Context.POWER_SERVICE))
+            # Create wakelock (use PowerManager.FULL_WAKE_LOCK for full wakelock)
+            self.wake_lock = power_manager.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK, "MyApp::WakeLockTag"
+            )
+            self.wake_lock.acquire()
+            print("WakeLock acquired")
+        except Exception as e:
+            print(f"Wake lock aquire error: {e}")
 
     def release_wakelock(self):
         if self.wake_lock and self.wake_lock.isHeld():
@@ -148,8 +226,13 @@ class NavIndicatorApp(MDApp):
             self.wake_lock = None
             print("WakeLock released")
 
+    def write_config(self):
+        with open(self.config_path, "w") as cf:
+            json.dump(self.config_template, cf)
+
     def set_stearing_pos(self, choice:str):
         self.stearing = choice
+        self.config_template["stearing"] = choice
         print(self.stearing)
 
     def list_bl_devices(self, button):
@@ -193,17 +276,50 @@ class NavIndicatorApp(MDApp):
         tmp_mac = tmp_mac.strip()
         if len(tmp_mac) == 17:
             self.bl_mac = tmp_mac
-            try:
-                self.blu_ok = self.bluCon.connect_device(self.bl_mac)
-            except Exception as e:
-                print(f"Error in bluetooth connection: {e}")
-            if self.blu_ok:
-                self.show_toast_msg("Bluetooth connection success")
+            self.config_template["mac"] = tmp_mac
+            self.config_template["bt"] = "connect"
+            self.write_config()
+            Thread(target=self.bt_connect_checker, daemon=True).start()
         else:
             self.show_toast_msg("Please enter a valid BT MAC or choose one from Paired Devices!", is_error=True)
 
+    def bt_connect_checker(self):
+        import time
+        time.sleep(2)
+        resp = None
+        if os.path.exists(self.resp_path):
+            with open(self.resp_path, "r") as rf:
+                resp = json.load(rf)
+            if resp:
+                resp_bt = resp.get("bt", "")
+                if resp_bt == "connected":
+                    Clock.schedule_once(lambda dt: self.show_toast_msg("Bluetooth is connected"))
+                    self.blu_ok = True
+                elif resp_bt == "failed":
+                    Clock.schedule_once(lambda dt: self.show_toast_msg("Bluetooth connection failed!", is_error=True))
+                elif resp_bt == "none":
+                    Clock.schedule_once(lambda dt: self.show_toast_msg("Connection is not yet complete...", is_error=True, duration=2))
+                    self.bt_connect_checker()
+
+    def dir_resp_checker(self):
+        import time
+        while True:
+            resp = None
+            if os.path.exists(self.resp_path):
+                with open(self.resp_path, "r") as rf:
+                    resp = json.load(rf)
+                if resp:
+                    resp_distance = resp.get("distance", "")
+                    resp_direction = resp.get("direction", "")
+                    current_text = f"{resp_distance}, {resp_direction}"
+                    if self.resp_old_text != current_text:
+                        self.resp_old_text = current_text
+                        self.result_txt.text = current_text
+            time.sleep(1)
+
     def go_to_nav(self, confirm=False, instance=None):
         if confirm or self.blu_ok:
+            Thread(target=self.write_config, daemon=True).start() # to write the stearing position
             self.root.ids.screen_manager.current = "navIndiScr"
             self.txt_dialog_closer(instance)
         else:
@@ -227,33 +343,33 @@ class NavIndicatorApp(MDApp):
                 buttons
             )
 
-    # automation logic
+    # automation logic (now it is managed via service)
     def process_nav_from_api(self, distance, direction):
-        if distance > 0 and distance <= 50:
+        if distance > 0 and distance <= 60:
             if direction == "left":
-                Clock.schedule_once(lambda dt: self.bluCon.send_cmd("left"))
+                Clock.schedule_once(partial(self.bluCon.send_cmd, "left"))
                 self.auto_indicator = True
             elif direction == "right":
-                Clock.schedule_once(lambda dt: self.bluCon.send_cmd("right"))
+                Clock.schedule_once(partial(self.bluCon.send_cmd, "right"))
                 self.auto_indicator = True
             elif direction == "u-turn":
                 if self.stearing == "right":
-                    Clock.schedule_once(lambda dt: self.bluCon.send_cmd("u-right"))
+                    Clock.schedule_once(partial(self.bluCon.send_cmd, "u-right"))
                 else:
-                    Clock.schedule_once(lambda dt: self.bluCon.send_cmd("u-left"))
+                    Clock.schedule_once(partial(self.bluCon.send_cmd, "u-left"))
                 self.auto_indicator = True
             elif direction == "straight":
-                Clock.schedule_once(lambda dt: self.bluCon.send_cmd("off"))
+                Clock.schedule_once(partial(self.bluCon.send_cmd, "off"))
                 self.auto_indicator = False
-        elif distance > 50 and self.auto_indicator:
-            Clock.schedule_once(lambda dt: self.bluCon.send_cmd("off"))
+        elif distance > 60 and self.auto_indicator:
+            Clock.schedule_once(partial(self.bluCon.send_cmd, "off"))
             self.auto_indicator = False
 
-    def api_callback(self, item):
+    def api_callback(self, item, *args):
         distance_final = None
         direction_final = None
         for i in item:
-            print(i[1])
+            #print(i[1])
             txt = str(i[1]).lower()
             distance_tmp = distance_in_meters(txt)
             direction_tmp = extract_direction(txt)
@@ -264,25 +380,37 @@ class NavIndicatorApp(MDApp):
             if distance_tmp and direction_tmp:
                 break # got both direction & distance to process
         if distance_final and direction_final:
-            Clock.schedule_once(lambda dt: self.process_nav_from_api(distance_final, direction_final))
+            Thread(
+                target=self.process_nav_from_api,
+                kwargs={
+                    "distance": distance_final,
+                    "direction": direction_final
+                },
+                daemon=True
+            ).start()
+            #Clock.schedule_once(lambda dt: self.process_nav_from_api(distance_final, direction_final))
         self.result_txt.text = f"{distance_final}, {direction_final}"
 
     def toggle_api_server(self):
         toggle_btn = self.root.ids.nav_main_box.ids.start_app_server_btn
         if self.is_api_server_on:
-            self.app_api_server.stop()
+            #self.app_api_server.stop()
+            self.config_template["server"] = "stop"
+            self.write_config()
             self.is_api_server_on = False
             toggle_btn.text = "Sart Server"
             toggle_btn.icon = "play"
             toggle_btn.md_bg_color = "gray"
         else:
-            self.app_api_server.start()
+            #self.app_api_server.start()
+            self.config_template["server"] = "start"
+            self.write_config()
             self.is_api_server_on = True
             toggle_btn.text = "Stop Server"
             toggle_btn.icon = "stop"
             toggle_btn.md_bg_color = "orange"
 
-    def esp_api(self, title:str="", text:str=""): # to be updated with actual ESP API later
+    def internal_api_call(self, title:str="", text:str=""): # to be updated with actual ESP API later
         import requests
         try:
             requests.post(
@@ -292,31 +420,32 @@ class NavIndicatorApp(MDApp):
         except Exception as e:
             print(f"An API error: {e}")
 
-    def indicatior_light(self, instance, choice:str = "None"):
+    def indicatior_light(self, instance, choice:str = "none"):
         btn_txt_update = self.root.ids.nav_main_box.ids.btn_text
         api_text = ""
         #print(instance.md_bg_color)
         if instance.md_bg_color == [0.5019607843137255, 0.5019607843137255, 0.5019607843137255, 1.0]: # gray
             self.turn_off_all()
-            Clock.schedule_once(lambda dt: self.bluCon.send_cmd(choice))
+            self.config_template["cmd"] = choice
             instance.md_bg_color = "orange"
             btn_txt_update.text = f"{choice} is ON"
             api_text = f"{choice} is ON for API"
         else:
             self.turn_off_all()
-            Clock.schedule_once(lambda dt: self.bluCon.send_cmd("off"))
+            self.config_template["cmd"] = "off"
             instance.md_bg_color = "gray"
             btn_txt_update.text = "All OFF"
             api_text = f"{choice} is OFF for API"
-        # Call the ESP API
-        Thread(
-            target=self.esp_api,
-            kwargs={
-                "title": "test_id",
-                "text": api_text
-            },
-            daemon=True
-        ).start()
+        self.write_config()
+        # Call the Local API for debugging
+        #Thread(
+        #    target=self.internal_api_call,
+        #    kwargs={
+        #        "title": "test_id",
+        #        "text": api_text
+        #    },
+        #    daemon=True
+        #).start()
 
     def turn_off_all(self):
         btn_group = [
@@ -390,10 +519,16 @@ class NavIndicatorApp(MDApp):
     ## run on app exit
     def on_stop(self):
         if platform == "android":
+            # release wakelock
             try:
                 self.release_wakelock()
             except Exception as e:
-                self.show_toast_msg(f"Screen on setup error: {e}", is_error=True)
+                print(f"Screen on setup error: {e}")
+            # stop foreground service
+            try:
+                self.stop_service()
+            except Exception as e:
+                print(f"Service stop error: {e}")
 
 if __name__ == '__main__':
     NavIndicatorApp().run()

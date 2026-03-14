@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import uvicorn
+from kivy.clock import Clock
 from threading import Thread
 import asyncio
+from functools import partial
 
 # data formatting for request
 class NavData(BaseModel):
@@ -13,6 +15,10 @@ class NavData(BaseModel):
     ticker_text: str | None = None
     big_text: str | None = None
 
+class ControlData(BaseModel):
+    api: str
+
+# FastAPI app
 app = FastAPI()
 
 # api server class with callback function
@@ -24,6 +30,12 @@ class PosiApiServer:
         self.kivyCallback = None
         self.server: uvicorn.Server | None = None
         self.thread: Thread | None = None
+
+    # ----------------------------
+    # Control callback
+    # ----------------------------
+    def set_control_caller(self, callback=None):
+        self.controlCallback = callback
 
     # ----------------------------
     # Kivy callback
@@ -75,25 +87,35 @@ class PosiApiServer:
 async def process_nav_notification(item: NavData, request: Request):
     server: PosiApiServer = request.app.state.server
 
-    print(f"{item.title}, {item.text}, {item.sub_text},{item.ticker_text}, {item.big_text}")
-
     if server.kivyCallback:
-        server.kivyCallback(item)
+        Thread(
+            target=server.kivyCallback,
+            kwargs={
+                "item": item
+            },
+            daemon=True
+        ).start()
+
+    return item
+
+@app.post("/control/")
+async def internal_control(item: ControlData, request: Request):
+    server: PosiApiServer = request.app.state.server
+
+    if server.controlCallback:
+        Clock.schedule_once(partial(server.controlCallback, item))
 
     return item
 
 # test locally
 if __name__ == "__main__":
-    def kivy_func(item):
-        full_text = ""
-        for i in item:
-            txt = item[i]
-            full_text = full_text + f"{txt}, "
-        print(full_text)
+    #def kivy_func(item):
+    #    full_text = ""
+    #    for i in item:
+    #        txt = item[i]
+    #        full_text = full_text + f"{txt}, "
+    #    print(full_text)
 
     apiServ = PosiApiServer()
-    apiServ.set_kivy_caller(kivy_func)
+    #apiServ.set_kivy_caller(kivy_func)
     apiServ.start()
-    import time
-    time.sleep(20) # number seconds to run the server
-    apiServ.stop()
