@@ -47,7 +47,7 @@ if platform == "android":
         # notification listener code for android
         NavListener = autoclass('in.daslearning.navindi.NavNotificationListener')
 
-        class NavCallback(PythonJavaClass):
+        class MyNavCallback(PythonJavaClass):
             __javainterfaces__ = [
                 'in/daslearning/navindi/NavNotificationListener$NavCallback'
             ]
@@ -242,8 +242,11 @@ def nav_service_thread():
 if __name__ == "__main__":
     # start the service from here (if required)
     if platform == "android":
-        callback = NavCallback()
-        NavListener.setCallback(callback)
+        try:
+            callback = MyNavCallback()
+            NavListener.setCallback(callback)
+        except Exception as e:
+            print(f"Error during java callback setup: {e}")
 
     # the main listener loop
     nav_service_thread()
