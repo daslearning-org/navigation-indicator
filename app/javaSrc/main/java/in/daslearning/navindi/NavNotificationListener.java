@@ -45,7 +45,7 @@ public class NavNotificationListener extends NotificationListenerService {
             );
         }
         else{
-            Log.d("Callback is empty!!")
+            Log.d("NAVINDI", "Callback is empty!!");
         }
     }
 }

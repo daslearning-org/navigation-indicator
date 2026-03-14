@@ -58,18 +58,18 @@ if platform == "android":
                 print("Package:", pkg)
                 print("Title:", title)
                 print("Text:", text)
-                pkg = pkg.strip()
-                if pkg in ["com.google.android.apps.maps", "com.virtualmaze.offlinemapnavigationtracker", "net.osmand"]:
-                    item = NavData()
-                    item.title = title
-                    item.text = text
-                    Thread(
-                        target=api_nav_listner,
-                        kwargs={
-                            "item": item
-                        },
-                        daemon=True
-                    ).start()
+                #pkg = pkg.strip()
+                #if pkg in ["com.google.android.apps.maps", "com.virtualmaze.offlinemapnavigationtracker", "net.osmand"]:
+                #    item = NavData()
+                #    item.title = title
+                #    item.text = text
+                #    Thread(
+                #        target=api_nav_listner,
+                #        kwargs={
+                #            "item": item
+                #        },
+                #        daemon=True
+                #    ).start()
         # now bind the service
     except Exception as e:
         print(f"Error while setting up notification listerner: {e}")
@@ -245,6 +245,7 @@ if __name__ == "__main__":
         try:
             callback = MyNavCallback()
             NavListener.setCallback(callback)
+            print("Seems callback set ok..")
         except Exception as e:
             print(f"Error during java callback setup: {e}")
 
