@@ -9,7 +9,7 @@ import time
 import sys
 
 # import locals
-from services.postApi import PosiApiServer
+from services.postApi import PosiApiServer, NavData
 from services.bluControl import BluetoothCon
 from services.mapBrain import distance_in_meters, extract_direction, clean_text
 
@@ -28,9 +28,11 @@ auto_indicator = False
 config_data = {}
 stearing = "right"
 last_choice = "none"
-# paths on android
+
+# for android
 if platform == "android":
-    from jnius import autoclass #, cast
+    from jnius import autoclass, PythonJavaClass, java_method
+    # set path
     try:
         service = autoclass('org.kivy.android.PythonService').mService
         context = service.getApplicationContext()
@@ -40,6 +42,39 @@ if platform == "android":
     except Exception as e:
         config_dir = abspath("/storage/emulated/0/Android/data/in.daslearning.navindi/files/config/")
         print(f"Error while accessing app internal path: {e}")
+    
+    try:
+        # notification listener code for android
+        NavListener = autoclass('in.daslearning.navindi.NavNotificationListener')
+
+        class NavCallback(PythonJavaClass):
+            __javainterfaces__ = [
+                'in/daslearning/navindi/NavNotificationListener$NavCallback'
+            ]
+            __javacontext__ = 'app'
+
+            @java_method('(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V')
+            def onNavigationUpdate(self, pkg, title, text):
+                print("Package:", pkg)
+                print("Title:", title)
+                print("Text:", text)
+                pkg = pkg.strip()
+                if pkg in ["com.google.android.apps.maps", "com.virtualmaze.offlinemapnavigationtracker", "net.osmand"]:
+                    item = NavData()
+                    item.title = title
+                    item.text = text
+                    Thread(
+                        target=api_nav_listner,
+                        kwargs={
+                            "item": item
+                        },
+                        daemon=True
+                    ).start()
+        # now bind the service
+    except Exception as e:
+        print(f"Error while setting up notification listerner: {e}")
+
+# for other platforms
 else:
     # Determine the base path for your application's resources
     if getattr(sys, 'frozen', False):
@@ -206,6 +241,9 @@ def nav_service_thread():
 
 if __name__ == "__main__":
     # start the service from here (if required)
+    if platform == "android":
+        callback = NavCallback()
+        NavListener.setCallback(callback)
 
     # the main listener loop
     nav_service_thread()

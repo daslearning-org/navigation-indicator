@@ -1,5 +1,8 @@
 ## Changes
 
+### 0.1.0
+- Adding feature to read notifications directly from our app. (No need to rely on other apps)
+
 ### 0.0.3
 - Now app will use a service, so that app may not need to stay on foreground.
 - Now automatic nagivation start threashold is 60m (earlier 50m).
