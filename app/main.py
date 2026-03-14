@@ -79,6 +79,7 @@ class NavIndicatorApp(MDApp):
         super().__init__(**kwargs)
         self.stearing = "right"
         self.bl_mac = ""
+        self.service = None
         self.wake_lock = None
         self.bl_list_menu = None
         self.txt_dialog = None
@@ -105,11 +106,11 @@ class NavIndicatorApp(MDApp):
             #from android import activity
             # permissions
             from android.permissions import check_permission, request_permissions, Permission
-            sdk_version = 28
+            self.sdk_version = 28
             try:
                 VERSION = autoclass('android.os.Build$VERSION')
-                sdk_version = VERSION.SDK_INT
-                print(f"Android SDK: {sdk_version}")
+                self.sdk_version = VERSION.SDK_INT
+                print(f"Android SDK: {self.sdk_version}")
             except Exception as e:
                 print(f"Could not check the android SDK version: {e}")
             permissions = [
@@ -125,11 +126,6 @@ class NavIndicatorApp(MDApp):
                 request_permissions(permissions)
             except Exception as e:
                 print(f"Error during permission grant: {e}")
-            # wake lock start to prevent sleep when app is active
-            try:
-                self.acquire_wakelock()
-            except Exception as e:
-                self.show_toast_msg(f"Screen on setup error: {e}", is_error=True)
             # paths on android
             context = autoclass('org.kivy.android.PythonActivity').mActivity
             android_path = context.getExternalFilesDir(None).getAbsolutePath()
@@ -142,13 +138,6 @@ class NavIndicatorApp(MDApp):
                 self.external_storage = os.path.abspath("/storage/emulated/0/")
             # start the listner service on Android
             try:
-                #PythonActivity = autoclass('org.kivy.android.PythonActivity')
-                #mActivity = PythonActivity.mActivity
-                #self.service = autoclass('in.daslearning.navindi.ServiceNavindisvc')
-                #argument = ''
-                #argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
-                #self.service.start(mActivity, argument)
-                #self.service.start(mActivity, 'icon', 'Navigation Indicator', 'Service Running' , argument)
                 self.start_service()
             except Exception as e:
                 print(f"Error while starting android service: {e}")
@@ -175,41 +164,61 @@ class NavIndicatorApp(MDApp):
         self.blu_ok = False
         Thread(target=self.dir_resp_checker, daemon=True).start()
 
+    def start_service_java(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        activity = PythonActivity.mActivity
+        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
+        intent = Intent(activity, NavindiService)
+        activity.startForegroundService(intent) # startService() for android api 25 & older
+        print("Started the service")
+        try:
+            argument = NavindiService.getIntent().getStringExtra("serviceArgument")
+            print(f"Arg from java: {argument}")
+        except Exception as e:
+            print(f"Error accessing service arg: {e}")
+
+    def stop_service_java(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        activity = PythonActivity.mActivity
+        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
+        intent = Intent(activity, NavindiService)
+        activity.stopService(intent)
+        print("Stopped the service")
+
     def start_service(self):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
-        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
-        context = PythonActivity.mActivity
-        intent = autoclass('android.content.Intent')(
-            context,
-            NavindiService
-        )
-        context.startForegroundService(intent)
-        print(f"Started the service: {NavindiService}")
+        mActivity = PythonActivity.mActivity
+        service = autoclass('in.daslearning.navindi.ServiceNavindiservice')
+        argument = ''
+        #argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
+        service.start(mActivity, argument)
+        #service.start(mActivity, 'icon', 'Navigation Indicator', 'Service Running' , argument)
 
     def stop_service(self):
+        ServiceNavindisvc = autoclass('in.daslearning.navindi.ServiceNavindiservice')
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
-        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
-        context = PythonActivity.mActivity
-        intent = autoclass('android.content.Intent')(
-            context,
-            NavindiService
-        )
-        context.stopService(intent)
+        mActivity = PythonActivity.mActivity
+        ServiceNavindisvc.stop(mActivity)
 
     def acquire_wakelock(self):
         if self.wake_lock:
             return  # already acquired
-        PythonActivity = autoclass("org.kivy.android.PythonActivity")
-        Context = autoclass("android.content.Context")
-        activity = PythonActivity.mActivity
-        PowerManager = autoclass("android.os.PowerManager")
-        power_manager = cast(PowerManager, activity.getSystemService(Context.POWER_SERVICE))
-        # Create wakelock (use PowerManager.FULL_WAKE_LOCK for full wakelock)
-        self.wake_lock = power_manager.newWakeLock(
-            PowerManager.FULL_WAKE_LOCK, "MyApp::WakeLockTag"
-        )
-        self.wake_lock.acquire()
-        print("WakeLock acquired")
+        try:
+            PythonActivity = autoclass("org.kivy.android.PythonActivity")
+            Context = autoclass("android.content.Context")
+            activity = PythonActivity.mActivity
+            PowerManager = autoclass("android.os.PowerManager")
+            power_manager = cast(PowerManager, activity.getSystemService(Context.POWER_SERVICE))
+            # Create wakelock (use PowerManager.FULL_WAKE_LOCK for full wakelock)
+            self.wake_lock = power_manager.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK, "MyApp::WakeLockTag"
+            )
+            self.wake_lock.acquire()
+            print("WakeLock acquired")
+        except Exception as e:
+            print(f"Wake lock aquire error: {e}")
 
     def release_wakelock(self):
         if self.wake_lock and self.wake_lock.isHeld():
@@ -510,10 +519,16 @@ class NavIndicatorApp(MDApp):
     ## run on app exit
     def on_stop(self):
         if platform == "android":
+            # release wakelock
             try:
                 self.release_wakelock()
             except Exception as e:
                 print(f"Screen on setup error: {e}")
+            # stop foreground service
+            try:
+                self.stop_service()
+            except Exception as e:
+                print(f"Service stop error: {e}")
 
 if __name__ == '__main__':
     NavIndicatorApp().run()

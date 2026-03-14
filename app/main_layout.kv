@@ -78,8 +78,8 @@ MDScreen:
 
                 MDScreen:
                     name: "navIndiScr"
-                    #on_enter: app.sample_func()
-                    #on_leave: app.sample_func()
+                    on_enter: app.acquire_wakelock()
+                    on_leave: app.release_wakelock()
                     NavMainBox:
                         id: nav_main_box
 

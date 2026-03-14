@@ -30,7 +30,7 @@ stearing = "right"
 last_choice = "none"
 # paths on android
 if platform == "android":
-    from jnius import autoclass, cast
+    from jnius import autoclass #, cast
     try:
         service = autoclass('org.kivy.android.PythonService').mService
         context = service.getApplicationContext()
@@ -200,16 +200,12 @@ def nav_service_thread():
         else:
             break # stop the service
 
+        #sys.stdout.flush()
         # put a sleep
         time.sleep(0.5)
 
 if __name__ == "__main__":
-    # start the service from here
-    #if platform == "android":
-    #    PythonService = autoclass('org.kivy.android.PythonService')
-    #    service = PythonService.mService
-    #    service.setAutoRestartService(True)
-    #    service.setForeground(True)
-    
+    # start the service from here (if required)
+
     # the main listener loop
     nav_service_thread()

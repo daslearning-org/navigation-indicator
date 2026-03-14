@@ -1,3 +1,0 @@
-        <service android:name="in.daslearning.navindi.NavindiService" 
-                 android:exported="false" 
-                 android:foregroundServiceType="location"/>

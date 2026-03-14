@@ -55,7 +55,7 @@ icon.filename = %(source.dir)s/data/images/favicont512.png
 orientation = portrait
 
 # (list) List of service to declare, doc: https://github.com/kivy/python-for-android/blob/develop/doc/source/services.rst
-#services = navindisvc:services/navService.py:foreground:foregroundServiceType=location
+services = navindiservice:services/navService.py:foreground:foregroundServiceType=location
 
 #
 # OSX Specific
@@ -160,7 +160,7 @@ android.accept_sdk_license = True
 
 # (str) Extra xml element to write directly inside the <manifest><application> tag as an element of AndroidManifest.xml
 # use that parameter to provide a filename from where to load your custom XML arguments:
-android.extra_manifest_application_element = %(source.dir)s/navscv.xml
+#android.extra_manifest_application_element = %(source.dir)s/navscv.xml
 
 # (str) Full name including package path of the Java class that implements Python Service
 # use that parameter to set custom Java class which extends PythonService
@@ -186,7 +186,7 @@ android.extra_manifest_application_element = %(source.dir)s/navscv.xml
 
 # (list) List of Java files to add to the android project (can be java or a
 # directory containing the files)
-android.add_src = ./javaSrc
+#android.add_src = ./javaSrc
 
 # (list) Android AAR archives to add
 #android.add_aars =
