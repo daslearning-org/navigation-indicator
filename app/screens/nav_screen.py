@@ -143,9 +143,20 @@ Builder.load_string('''
             font_size: sp(18)
             md_bg_color: 'gray'
             #pos_hint: {"center_x": .5, "center_y": .5}
-            size_hint_x: 0.7
+            size_hint_x: 0.5
             #size_hint_y: 0.7
             on_release: app.toggle_api_server()
+
+        MDFillRoundFlatIconButton:
+            id: start_listener_btn
+            text: "Start Auto Mode"
+            icon: "play"
+            font_size: sp(18)
+            md_bg_color: 'gray'
+            #pos_hint: {"center_x": .5, "center_y": .5}
+            size_hint_x: 0.5
+            #size_hint_y: 0.7
+            on_release: app.toggle_auto_mode()
 
     BoxLayout: # result display
         size_hint_y: 0.2

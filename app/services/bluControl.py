@@ -72,13 +72,17 @@ class BluetoothCon():
                 )
                 socket.connect()
                 self.bt_out = socket.getOutputStream()
-                bt_in = socket.getInputStream()
+                bt_in = socket.getInputStream() # to be implemented with a heartbeat
                 print("Connected to: ", mac)
                 self.connect_ok = True
                 stat = True
             except Exception as e:
                 print(f"Error while conencting to ESP32: {e}")
         return stat
+
+    def check_bl_stat(self):
+        """Check if bluetooth connection is fine: returns Bool"""
+        return self.connect_ok
 
     def send_cmd(self, cmd:str, *args):
         stat = False
@@ -88,4 +92,5 @@ class BluetoothCon():
                 stat = True
             except Exception as e:
                 print(f"Error while send msg to ESP: {e}")
+                self.connect_ok = False
         return stat

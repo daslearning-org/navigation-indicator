@@ -32,13 +32,16 @@ Connect your ESP32 board to your computer with a USB cable & upload [this sketch
 ### 📱 The Android App
 
 1. Download the [latest apk](https://github.com/daslearning-org/navigation-indicator/releases) and install.
-2. Open the app & grant necessary permissions as prompted.
+2. Open the app & grant necessary permissions as prompted. If you want to use this in `Auto Mode`, you need to grant `Notification read` permission for our `dlNav` app from `Setting` > `Apps` > `Special app access`.
 3. Turn on bluetooth & pair `NavIndiESP` (which is from the ESP32) device from phone settings or notification panel.
-4. Use the app to list all paired devices, choose the same bluetooth name & connect it from the app. Then proceed.
+4. Use the app to list all paired devices, choose the same bluetooth name & connect it from the app. Then proceed. You may manually enter the `MAC` address of your ESP too.
 5. Voila, you have now got the complete manual control of your DIY indicator device. You can press any switch to turn on/off the indicators.
-6. To use the automatic indicator controls from navigation app, click on `Start Server` & proceed with next steps as below.
+6. Our app can read `Notifications` from apps like `OsmAnd`, `Offline Map Navigation` from VirtualMaze and show the automatic indicator lights. Just start the `Auto Mode`. (Notification read permission needed).
+7. To use the automatic indicator controls from `MacroDroid` or `Termux`, click on `Start Server` & proceed with next steps as below. (Then our app doesn't need notification or location access)
 
-### 🧠 Automatic Navigation
+> Note: Android Play Protect may block this app as it requires the special permission (notification read), if you do not wish to proceed, you can download the older version `0.0.3` which works with Macrodroid or Termux as shown below (our app doesn't read notification). Rest assured, we do not collect any data from our app and the app code is open-source.
+
+### 🧠 Automatic Navigation via Termux or Macrodroid
 You can choose either the macrodroid or termux way. Which will read the notifications from your navigation app & trigger an API (local) call to our android app.
 > Note: Google maps or many other maps do not provide text based turn details like `turn left or make a u-turn` etc. You may choose such app which provides text based turn notifications, such as `OsmAnd`.
 
@@ -56,7 +59,4 @@ You need to follow this [termux guide](./termux/README.md) which will start the 
 
 ## 🤝 Contributing to this project
 I would really love to get more contributors on this project. <br>
-
-I know many improvements can be done & also limitations can be minimized. Few of them are given below.
-1. Directly read notifications from our app (skipping the macrodroid & termux completely): This is really difficult from Python based android app (Kivy), someone with Java/Kotlin knowledge can help here.
-2. The micro-controller: other variants can be added & code improvement can also be done.
+I know many improvements can be done & also limitations can be minimized. 

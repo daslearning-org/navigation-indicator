@@ -11,7 +11,7 @@ public class NavNotificationListener extends NotificationListenerService {
     public static NavCallback callback;
 
     public interface NavCallback {
-        void onNavigationUpdate(String pkg, String title, String text);
+        void onNavigationUpdate(String pkg, String title, String text, String bigtext);
     }
 
     public static void setCallback(NavCallback cb) {
@@ -19,10 +19,15 @@ public class NavNotificationListener extends NotificationListenerService {
         Log.d("NAVINDI", "Python callback registered");
     }
 
+    public static void clearCallback() {
+        callback = null;
+        Log.d("NAVINDI", "Callback cleared");
+    }
+
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
 
-        Log.d("NAVINDI", "Notification from: " + sbn.getPackageName());
+        //Log.d("NAVINDI", "Notification from: " + sbn.getPackageName());
         String pkg = sbn.getPackageName();
 
         Bundle extras = sbn.getNotification().extras;
@@ -32,20 +37,21 @@ public class NavNotificationListener extends NotificationListenerService {
         String title = titleCs != null ? titleCs.toString() : "";
         String text  = textCs  != null ? textCs.toString()  : "";
         String big   = bigCs   != null ? bigCs.toString()   : "";
-        Log.d("NAVINDI", "Title=" + title);
-        Log.d("NAVINDI", "Text=" + text);
-        Log.d("NAVINDI", "BigText=" + big);
+        //Log.d("NAVINDI", "Title=" + title);
+        //Log.d("NAVINDI", "Text=" + text);
+        //Log.d("NAVINDI", "BigText=" + big);
 
         if (callback != null) {
-            Log.d("NAVINDI", "Calling Python callback");
+            //Log.d("NAVINDI", "Calling Python callback");
             callback.onNavigationUpdate(
                 pkg,
                 title,
-                text
+                text,
+                big
             );
         }
-        else{
-            Log.d("NAVINDI", "Callback is empty!!");
-        }
+        //else{
+        //    Log.d("NAVINDI", "Callback is empty!!");
+        //}
     }
 }

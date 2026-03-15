@@ -21,13 +21,17 @@ resp_template = {
     "distance": "none",
     "bt": "none",
     "server": "none",
+    "auto_mode": "none",
 }
 api_started = False
+auto_mode_stat = False
 blue_conn_stat = False
+bt_connecting = False
 auto_indicator = False
 config_data = {}
 stearing = "right"
 last_choice = "none"
+mac_set = None
 
 # for android
 if platform == "android":
@@ -53,23 +57,21 @@ if platform == "android":
             ]
             __javacontext__ = 'app'
 
-            @java_method('(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V')
-            def onNavigationUpdate(self, pkg, title, text):
-                print("Package:", pkg)
-                print("Title:", title)
-                print("Text:", text)
-                #pkg = pkg.strip()
-                #if pkg in ["com.google.android.apps.maps", "com.virtualmaze.offlinemapnavigationtracker", "net.osmand"]:
-                #    item = NavData()
-                #    item.title = title
-                #    item.text = text
-                #    Thread(
-                #        target=api_nav_listner,
-                #        kwargs={
-                #            "item": item
-                #        },
-                #        daemon=True
-                #    ).start()
+            @java_method('(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V')
+            def onNavigationUpdate(self, pkg, title, text, bigText):
+                #print("Package:", pkg)
+                #print("Title:", title)
+                #print("Text:", text)
+                pkg = pkg.strip()
+                if pkg in ["com.google.android.apps.maps", "com.virtualmaze.offlinemapnavigationtracker", "net.osmand"]:
+                    item = NavData(title=title, text=text, big_text=bigText)
+                    Thread(
+                        target=api_nav_listner,
+                        kwargs={
+                            "item": item
+                        },
+                        daemon=True
+                    ).start()
         # now bind the service
     except Exception as e:
         print(f"Error while setting up notification listerner: {e}")
@@ -84,14 +86,23 @@ else:
         # Running in a normal Python environment
         base_path = dirname(abspath(__file__))
     config_dir = join(base_path, 'config')
+if not exists(config_dir):
+    import os
+    os.makedirs(config_dir, exist_ok=True)
 config_file = join(config_dir, "config.json")
 resp_file = join(config_dir, "resp.json")
 
 # functions
 def process_nav_from_api(distance, direction):
-    print(f"Bluetooth command: {distance}, {direction}")
+    #print(f"Bluetooth command: {distance}, {direction}")
     global auto_indicator
-    if distance > 0 and distance <= 60:
+    global mac_set
+    global bt_connecting
+
+    bt_check = bluCon.check_bl_stat()
+    if not bt_check and not bt_connecting and mac_set:
+        connect_bluetooth(mac_set)
+    if distance > 0 and distance <= 60 and bt_check:
         if direction == "left":
             bluCon.send_cmd("left")
             auto_indicator = True
@@ -107,13 +118,18 @@ def process_nav_from_api(distance, direction):
         elif direction == "straight":
             bluCon.send_cmd("off")
             auto_indicator = False
-    elif distance > 60 and auto_indicator:
+    elif distance > 60 and auto_indicator and bt_check:
         bluCon.send_cmd("off")
         auto_indicator = False
 
 def manual_controls(choice:str):
     global last_choice
-    if choice != "none" and last_choice != choice:
+    global mac_set
+    global bt_connecting
+    bt_check = bluCon.check_bl_stat()
+    if not bt_check and not bt_connecting and mac_set:
+        connect_bluetooth(mac_set)
+    if choice != "none" and last_choice != choice and bt_check:
         bluCon.send_cmd(choice)
         last_choice = choice
 
@@ -122,7 +138,7 @@ def api_nav_listner(item, *args):
     distance_final = None
     direction_final = None
     for i in item:
-        print(i[1])
+        #print(i[1])
         txt = str(i[1]).lower()
         distance_tmp = distance_in_meters(txt)
         direction_tmp = extract_direction(txt)
@@ -135,19 +151,9 @@ def api_nav_listner(item, *args):
     if distance_final and direction_final:
         resp_template["direction"] = direction_final
         resp_template["distance"] = distance_final
-        print(f"Got from API: {distance_final}, {direction_final}")
-        if platform == "android":
-            Log.i("NAV_SERVICE: ", f"{distance_final}, {direction_final}")
+        #print(f"Got from API: {distance_final}, {direction_final}")
         process_nav_from_api(distance=distance_final, direction=direction_final)
         Thread(target=write_resp, daemon=True).start()
-        #Thread(
-        #    target=process_nav_from_api,
-        #    kwargs={
-        #        "distance": distance_final,
-        #        "direction": direction_final
-        #    },
-        #    daemon=True
-        #).start()
 
 def write_resp():
     global resp_template
@@ -176,16 +182,41 @@ def api_server_control(api_stat: str):
         resp_template["server"] = "started"
     Thread(target=write_resp, daemon=True).start()
 
+def auto_mode(control: str):
+    global auto_mode_stat
+    global resp_template
+    if control == "stop":
+        try:
+            NavListener.clearCallback()
+            auto_mode_stat = False
+            resp_template["auto_mode"] = "stopped"
+        except Exception as e:
+            print(f"Error during clearing callback: {e}")
+    elif control == "start":
+        try:
+            callback = MyNavCallback()
+            NavListener.setCallback(callback)
+            auto_mode_stat = True
+            resp_template["auto_mode"] = "started"
+        except Exception as e:
+            print(f"Error during callback setup: {e}")
+    Thread(target=write_resp, daemon=True).start()
+
 def connect_bluetooth(mac_addr:str):
     global blue_conn_stat
     global resp_template
+    global mac_set
+    global bt_connecting
     if len(mac_addr) == 17:
+        bt_connecting = True
         blue_conn_stat = bluCon.connect_device(mac_addr)
         if blue_conn_stat:
             resp_template["bt"] = "connected"
+            mac_set = mac_addr
         else:
             resp_template["bt"] = "failed"
         write_resp()
+    bt_connecting = False
 
 def nav_service_thread():
     #global vars
@@ -194,6 +225,8 @@ def nav_service_thread():
     global blue_conn_stat
     global config_data
     global last_choice
+    global bt_connecting
+    global auto_mode_stat
 
     write_resp() # blank the old file
 
@@ -207,7 +240,7 @@ def nav_service_thread():
         # handle bluetooth connect
         mac_addr = config_data.get("mac", "")
         bt_req = config_data.get("bt", "")
-        if not blue_conn_stat and len(mac_addr) == 17 and bt_req == "connect":
+        if not blue_conn_stat and not bt_connecting and len(mac_addr) == 17 and bt_req == "connect":
             connect_bluetooth(mac_addr)
         
         #handle bt commands from buttons
@@ -215,7 +248,7 @@ def nav_service_thread():
         if choice != "none" and last_choice != choice and blue_conn_stat:
             bluCon.send_cmd(choice)
             last_choice = choice
-            print(f"manual: {choice}")
+            #print(f"manual: {choice}")
 
         #handle api server
         server_stat = config_data.get("server", "")
@@ -223,6 +256,13 @@ def nav_service_thread():
             api_server_control("start")
         elif api_started and server_stat == "stop":
             api_server_control("stop")
+
+        #handle auto mode
+        control = config_data.get("auto_mode", "")
+        if not auto_mode_stat and control == "start" and platform == "android":
+            auto_mode("start")
+        elif auto_mode_stat and control == "stop" and platform == "android":
+            auto_mode("stop")
 
         # handle other params
         config_stear = config_data.get("stearing", "right")
@@ -241,13 +281,6 @@ def nav_service_thread():
 
 if __name__ == "__main__":
     # start the service from here (if required)
-    if platform == "android":
-        try:
-            callback = MyNavCallback()
-            NavListener.setCallback(callback)
-            print("Seems callback set ok..")
-        except Exception as e:
-            print(f"Error during java callback setup: {e}")
 
     # the main listener loop
     nav_service_thread()
