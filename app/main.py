@@ -25,7 +25,7 @@ from kivy.properties import StringProperty, NumericProperty, ObjectProperty, Boo
 Window.softinput_mode = "below_target"
 
 ## Global definitions
-__version__ = "0.0.3" # App version
+__version__ = "0.1.0" # App version
 
 # Determine the base path for your application's resources
 if getattr(sys, 'frozen', False):
@@ -74,6 +74,7 @@ class MainScreenBox(MDBoxLayout):
 ### Main App
 class NavIndicatorApp(MDApp):
     is_api_server_on = BooleanProperty(False)
+    is_auto_mode_on = BooleanProperty(False)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -89,6 +90,7 @@ class NavIndicatorApp(MDApp):
             "mac": "",
             "api_url": "http://127.0.0.1:8089/",
             "server": "stop",
+            "auto_mode": "stop",
             "bt": "none",
             "cmd": "none",
             "stearing": "right",
@@ -191,10 +193,11 @@ class NavIndicatorApp(MDApp):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
         mActivity = PythonActivity.mActivity
         service = autoclass('in.daslearning.navindi.ServiceNavindiservice')
-        argument = ''
-        #argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
-        service.start(mActivity, argument)
-        #service.start(mActivity, 'icon', 'Navigation Indicator', 'Service Running' , argument)
+        #argument = ''
+        argument = os.environ.get('PYTHON_SERVICE_ARGUMENT', '')
+        print(f"PYTHON_SERVICE_ARGUMENT: {argument}")
+        #service.start(mActivity, argument)
+        service.start(mActivity, 'icon', 'Nav Indicator', 'Service Running' , argument)
 
     def stop_service(self):
         ServiceNavindisvc = autoclass('in.daslearning.navindi.ServiceNavindiservice')
@@ -407,6 +410,23 @@ class NavIndicatorApp(MDApp):
             self.write_config()
             self.is_api_server_on = True
             toggle_btn.text = "Stop Server"
+            toggle_btn.icon = "stop"
+            toggle_btn.md_bg_color = "orange"
+
+    def toggle_auto_mode(self):
+        toggle_btn = self.root.ids.nav_main_box.ids.start_listener_btn
+        if self.is_auto_mode_on:
+            self.config_template["auto_mode"] = "stop"
+            self.write_config()
+            self.is_auto_mode_on = False
+            toggle_btn.text = "Sart Auto Mode"
+            toggle_btn.icon = "play"
+            toggle_btn.md_bg_color = "gray"
+        else:
+            self.config_template["auto_mode"] = "start"
+            self.write_config()
+            self.is_auto_mode_on = True
+            toggle_btn.text = "Stop Auto Mode"
             toggle_btn.icon = "stop"
             toggle_btn.md_bg_color = "orange"
 

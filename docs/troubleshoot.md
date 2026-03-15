@@ -52,3 +52,8 @@ somnath@dell-5530:~$ adb shell dumpsys activity services | grep navindi
 
 
 ```
+
+4. Check the notification listener service
+```bash
+adb shell dumpsys notification | grep navindi
+```

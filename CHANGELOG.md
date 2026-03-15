@@ -1,5 +1,11 @@
 ## Changes
 
+### 0.1.0
+- Adding feature to read notifications directly from our app, just start `Auto Mode`. (Need to have required permissions)
+- App will try connect the last connected bluetooth device if disconnected.
+
+> Note: No need to rely on other apps, although you still can use `Macrodroid` or `Termux` as the `API Server` feature from our app can listen from those apps.
+
 ### 0.0.3
 - Now app will use a service, so that app may not need to stay on foreground.
 - Now automatic nagivation start threashold is 60m (earlier 50m).
