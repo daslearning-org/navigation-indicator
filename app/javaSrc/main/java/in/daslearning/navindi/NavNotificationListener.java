@@ -41,6 +41,11 @@ public class NavNotificationListener extends NotificationListenerService {
         //Log.d("NAVINDI", "Text=" + text);
         //Log.d("NAVINDI", "BigText=" + big);
 
+        // Debug to check the keys
+        for (String key : extras.keySet()) {
+            Log.d("NAVINDI", key + " = " + extras.get(key));
+        }
+
         if (callback != null) {
             //Log.d("NAVINDI", "Calling Python callback");
             callback.onNavigationUpdate(
