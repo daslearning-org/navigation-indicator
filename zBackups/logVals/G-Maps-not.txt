@@ -1,0 +1,14 @@
+03-17 18:14:39.877  6484  6484 D NAVINDI : android.title = 
+03-17 18:14:39.878  6484  6484 D NAVINDI : android.reduced.images = true
+03-17 18:14:39.878  6484  6484 D NAVINDI : android.subText = 7 min · 1.6 km · 6:22 pm ETA
+03-17 18:14:39.878  6484  6484 D NAVINDI : android.showChronometer = false
+03-17 18:14:39.878  6484  6484 D NAVINDI : android.text = towards Dr S Radhakrishnan Rd / Hazra Rd
+03-17 18:14:39.878  6484  6484 D NAVINDI : android.progress = 0
+03-17 18:14:39.878  6484  6484 D NAVINDI : android.progressMax = 0
+03-17 18:14:39.879  6484  6484 D NAVINDI : android.appInfo = ApplicationInfo{9cde5e3 com.google.android.apps.maps}
+03-17 18:14:39.879  6484  6484 D NAVINDI : android.showWhen = true
+03-17 18:14:39.880  6484  6484 D NAVINDI : android.largeIcon = Icon(typ=BITMAP size=120x120)
+03-17 18:14:39.880  6484  6484 D NAVINDI : android.infoText = null
+03-17 18:14:39.880  6484  6484 D NAVINDI : android.progressIndeterminate = false
+03-17 18:14:39.880  6484  6484 D NAVINDI : android.remoteInputHistory = null
+03-17 18:14:39.881  6484  6484 D NAVINDI : android.colorized = true

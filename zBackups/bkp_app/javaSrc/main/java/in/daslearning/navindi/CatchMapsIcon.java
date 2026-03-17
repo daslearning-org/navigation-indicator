@@ -80,23 +80,29 @@ for (int x = 0; x < width; x++) {
 }
 
 // Convert that to text
-String direction;
+float dx = tipX - midX;
+        float dy = tipY - midY;
 
-if (right > left && right > top && right > bottom) {
-    direction = "RIGHT";
-}
-else if (left > right && left > top && left > bottom) {
-    direction = "LEFT";
-}
-else if (top > bottom) {
-    direction = "STRAIGHT";
-}
-else if (bottom > top && (left > right || right > left)) {
-    direction = "UTURN";
-}
-else {
-    direction = "UNKNOWN";
-}
+        String direction;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > 0) {
+                direction = "LEFT";
+            }
+            else {
+                direction = "RIGHT";
+            }
+        }
+        else {
+            if (dy < 0) {
+                direction = "STRAIGHT";
+            }
+            else {
+                direction = "U-TURN";
+            }
+        }
+
+        Log.d("NAVINDI", "Direction: " + direction);
 // debug tips
 Log.d("NAVINDI", "L=" + left + " R=" + right + " T=" + top + " B=" + bottom);
 Log.d("NAVINDI", "Direction: " + direction);
