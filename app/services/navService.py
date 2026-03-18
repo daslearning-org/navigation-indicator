@@ -98,11 +98,12 @@ def process_nav_from_api(distance, direction):
     global auto_indicator
     global mac_set
     global bt_connecting
+    global last_choice
 
     bt_check = bluCon.check_bl_stat()
     if not bt_check and not bt_connecting and mac_set:
         connect_bluetooth(mac_set)
-    if distance > 0 and distance <= 60 and bt_check:
+    if distance >= 0 and distance < 61 and bt_check:
         if direction == "left":
             bluCon.send_cmd("left")
             auto_indicator = True
@@ -121,6 +122,9 @@ def process_nav_from_api(distance, direction):
     elif distance > 60 and auto_indicator and bt_check:
         bluCon.send_cmd("off")
         auto_indicator = False
+    elif direction == "straight" and auto_indicator and bt_check:
+        bluCon.send_cmd("off")
+        auto_indicator = False
 
 def manual_controls(choice:str):
     global last_choice
@@ -132,6 +136,15 @@ def manual_controls(choice:str):
     if choice != "none" and last_choice != choice and bt_check:
         bluCon.send_cmd(choice)
         last_choice = choice
+
+def dayNightControl():
+    import time
+    current_time = int(time.strftime("%H%M"))
+    if current_time < 1730 and current_time > 530 :
+        control = "day"
+    else:
+        control = "night"
+    bluCon.send_cmd(control)
 
 def api_nav_listner(item, *args):
     global resp_template
@@ -213,6 +226,7 @@ def connect_bluetooth(mac_addr:str):
         if blue_conn_stat:
             resp_template["bt"] = "connected"
             mac_set = mac_addr
+            Thread(target=dayNightControl, daemon=True).start()
         else:
             resp_template["bt"] = "failed"
         write_resp()

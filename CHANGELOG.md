@@ -1,5 +1,9 @@
 ## Changes
 
+### 1.0.0
+#### ✅ The much required update to listen to Google Maps notification
+- Now we are capturing the indicator icons (GMaps doesn't provide text based turn directions) & applying logic to understand whether they are left / right  or u-turns.
+
 ### 0.1.0
 - Adding feature to read notifications directly from our app, just start `Auto Mode`. (Need to have required permissions)
 - App will try connect the last connected bluetooth device if disconnected.

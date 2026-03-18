@@ -123,7 +123,7 @@ public class NavNotificationListener extends NotificationListenerService {
         }
         // Top → STRAIGHT
         else {
-            direction = "STRAIGHT";
+            direction = "straight";
         }
         //Log.d("NAVINDI", "Direction: " + direction);
 
@@ -145,8 +145,8 @@ public class NavNotificationListener extends NotificationListenerService {
         String big   = bigCs   != null ? bigCs.toString()   : "";
 
         // Get the icon for G-Maps
-        if(pkg.equals("com.google.android.apps.maps") ||
-            pkg.equals("cz.seznam.mapy") 
+        if(
+            pkg.equals("com.google.android.apps.maps")
           ){
             Icon icon = sbn.getNotification().getLargeIcon();
             if (icon != null) {
@@ -157,7 +157,8 @@ public class NavNotificationListener extends NotificationListenerService {
 
                     if (drawable instanceof BitmapDrawable) {
                         bitmap = ((BitmapDrawable) drawable).getBitmap();
-                    } else {
+                    }
+                    else {
                         // fallback (important!)
                         bitmap = Bitmap.createBitmap(
                             drawable.getIntrinsicWidth(),
@@ -169,8 +170,7 @@ public class NavNotificationListener extends NotificationListenerService {
                         drawable.draw(canvas);
                     }
 
-                    Log.d("NAVINDI", "Arrow bitmap extracted: " +
-                            bitmap.getWidth() + "x" + bitmap.getHeight());
+                    //Log.d("NAVINDI", "Arrow bitmap extracted: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
                     big = iconToDirection(bitmap);
                     Log.d("NAVINDI", "Icon Direction: " + big);
