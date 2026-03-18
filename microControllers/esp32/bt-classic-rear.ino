@@ -136,7 +136,7 @@ void stopLED(){ // turn of the display
   FastLED.show();
 }
 
-void setDayNight(String *timeFromBT){
+void setDayNight(String timeFromBT){
   if (timeFromBT == "day"){
     FastLED.setBrightness(10);
   }
@@ -212,11 +212,9 @@ void loop(){
       btText == "ok-overtake" || btText == "no-overtake" || 
       btText == "u-right" || btText == "u-left" || 
       btText == "park"){
-      if (btText != modeSelected){
-        stopLED();
-        awake = true;
-        modeSelected = btText;
-      }
+      stopLED();
+      awake = true;
+      modeSelected = btText;
     }
     else if(btText == "off"){
       stopLED();
