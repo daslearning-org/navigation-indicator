@@ -25,7 +25,7 @@ from kivy.properties import StringProperty, NumericProperty, ObjectProperty, Boo
 Window.softinput_mode = "below_target"
 
 ## Global definitions
-__version__ = "0.1.0" # App version
+__version__ = "1.0.0" # App version
 
 # Determine the base path for your application's resources
 if getattr(sys, 'frozen', False):

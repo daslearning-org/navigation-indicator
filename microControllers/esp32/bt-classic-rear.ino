@@ -136,6 +136,15 @@ void stopLED(){ // turn of the display
   FastLED.show();
 }
 
+void setDayNight(String timeFromBT){
+  if (timeFromBT == "day"){
+    FastLED.setBrightness(10);
+  }
+  else if (timeFromBT == "night"){
+    FastLED.setBrightness(3);
+  }
+}
+
 void setup(){
   // Setup the ESP32 board after boot
   Serial.begin(115200);
@@ -143,8 +152,6 @@ void setup(){
   FastLED.addLeds<WS2812,DATA_PIN,GRB>(leds,NUM_LEDS);
   FastLED.clear();
   FastLED.setBrightness(3);
-  //setupWiFi();
-  //setupAPI();
   initFS();
   SerialBT.begin("NavIndiESP");
   Serial.println("The device started, now you can pair it with bluetooth! \n");
@@ -209,6 +216,10 @@ void loop(){
       awake = true;
       modeSelected = btText;
     }
+    else if(btText == "off"){
+      stopLED();
+      awake = false;
+    }
     else if(btText == "no-blink"){
       blink = false;
       ledState = true;
@@ -216,8 +227,8 @@ void loop(){
     else if(btText == "blink"){
       blink = true;
     }
-    else if(btText == "off"){
-      awake = false;
+    else if(btText == "day" || btText == "night"){
+      setDayNight(btText);
     }
   }
 

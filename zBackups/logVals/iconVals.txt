@@ -1,0 +1,24 @@
+NAVINDI : Arrow bitmap extracted: 120x120
+NAVINDI : Center: (14.226053, 14.97318)
+NAVINDI : Tip: (4, 27)
+NAVINDI : TopCount=67
+NAVINDI : Direction: U-TURN
+
+NAVINDI : Arrow bitmap extracted: 120x120
+NAVINDI : Center: (15.440594, 13.970297)
+NAVINDI : Tip: (28, 27)
+NAVINDI : TopCount=29
+NAVINDI : Direction: LEFT
+
+NAVINDI : Arrow bitmap extracted: 120x120
+NAVINDI : Center: (15.5, 13.173333)
+NAVINDI : Tip: (15, 4)
+NAVINDI : TopCount=42
+NAVINDI : Direction: STRAIGHT
+
+All above are correct but this is actually a right turn
+NAVINDI : Arrow bitmap extracted: 120x120
+NAVINDI : Center: (15.559406, 13.970297)
+NAVINDI : Tip: (3, 27)
+NAVINDI : TopCount=29
+NAVINDI : Direction: U-TURN
