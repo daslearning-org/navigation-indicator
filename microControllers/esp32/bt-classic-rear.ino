@@ -138,10 +138,10 @@ void stopLED(){ // turn of the display
 
 void setDayNight(String timeFromBT){
   if (timeFromBT == "day"){
-    FastLED.setBrightness(10);
+    FastLED.setBrightness(120);
   }
   else if (timeFromBT == "night"){
-    FastLED.setBrightness(3);
+    FastLED.setBrightness(30);
   }
 }
 
@@ -151,7 +151,7 @@ void setup(){
   Serial.println("Serial started");
   FastLED.addLeds<WS2812,DATA_PIN,GRB>(leds,NUM_LEDS);
   FastLED.clear();
-  FastLED.setBrightness(3);
+  FastLED.setBrightness(50); // : default
   initFS();
   SerialBT.begin("NavIndiESP");
   Serial.println("The device started, now you can pair it with bluetooth! \n");
