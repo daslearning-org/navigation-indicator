@@ -4,6 +4,8 @@ import android.bluetooth.*;
 import android.content.Context;
 import java.util.UUID;
 import android.util.Log;
+import android.os.Handler;
+import android.os.Looper;
 
 public class BLEHelper {
 
@@ -24,13 +26,21 @@ public class BLEHelper {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothDevice device = adapter.getRemoteDevice(mac);
 
+        if (gatt != null) {
+            gatt.disconnect();
+            gatt.close();
+            gatt = null;
+        }
+
         gatt = device.connectGatt(context, false, new BluetoothGattCallback() {
 
             @Override
             public void onConnectionStateChange(BluetoothGatt g, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.d("NAVINDI", "Connected");
-                    g.discoverServices();
+                    Log.d("NAVINDI", "Connected" + status);
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        g.discoverServices();
+                    }, 500);
                 }
             }
 
@@ -66,3 +76,15 @@ public class BLEHelper {
         gatt.writeCharacteristic(writeChar);
     }
 }
+
+// to be added
+new Handler(Looper.getMainLooper()).postDelayed(() -> {
+
+    gatt = device.connectGatt(
+        context,
+        false,
+        callback,
+        BluetoothDevice.TRANSPORT_LE
+    );
+
+}, 500);  // 500 ms delay
