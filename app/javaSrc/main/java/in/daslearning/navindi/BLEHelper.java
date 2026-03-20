@@ -7,7 +7,7 @@ import android.util.Log;
 
 public class BLEHelper {
 
-    private BLEListener listener;
+    //private BLEListener listener;
     private BluetoothGatt gatt;
     private BluetoothGattCharacteristic writeChar;
 
@@ -16,8 +16,7 @@ public class BLEHelper {
     //    Log.d("NAVINDI", "BLE Helper regiserted");
     //}
 
-    public BLEHelper(BLEListener listener) {
-        this.listener = listener;
+    public BLEHelper() {
     }
 
     public void connect(Context context, String mac) {
@@ -30,7 +29,7 @@ public class BLEHelper {
             @Override
             public void onConnectionStateChange(BluetoothGatt g, int status, int newState) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    listener.onConnected();
+                    Log.d("NAVINDI", "Connected");
                     g.discoverServices();
                 }
             }
@@ -48,13 +47,15 @@ public class BLEHelper {
                             (props & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0) {
 
                             writeChar = ch;
-                            listener.onReady();
+                            Log.d("NAVINDI", "BLE Ready");
                             return;
                         }
                     }
                 }
             }
-        });
+        },
+        BluetoothDevice.TRANSPORT_LE
+        );
     }
 
     public void send(String msg) {
