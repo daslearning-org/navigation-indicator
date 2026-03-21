@@ -13,11 +13,6 @@ public class BLEHelper {
     private BluetoothGatt gatt;
     private BluetoothGattCharacteristic writeChar;
 
-    //public static void setListner(BLEListener blePy) {
-    //    listener = blePy;
-    //    Log.d("NAVINDI", "BLE Helper regiserted");
-    //}
-
     public BLEHelper() {
     }
 
@@ -26,65 +21,66 @@ public class BLEHelper {
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothDevice device = adapter.getRemoteDevice(mac);
 
+        // clean previous connection
         if (gatt != null) {
             gatt.disconnect();
             gatt.close();
             gatt = null;
         }
 
-        gatt = device.connectGatt(context, false, new BluetoothGattCallback() {
+        // handle new connection
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            gatt = device.connectGatt(context, false, new BluetoothGattCallback() {
 
-            @Override
-            public void onConnectionStateChange(BluetoothGatt g, int status, int newState) {
-                if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.d("NAVINDI", "Connected" + status);
-                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                        g.discoverServices();
-                    }, 500);
+                @Override
+                public void onConnectionStateChange(BluetoothGatt g, int status, int newState) {
+                    if (newState == BluetoothProfile.STATE_CONNECTED) {
+                        Log.d("NAVINDI", "BLE Connected" + status);
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                            g.discoverServices();
+                        }, 500);
+                    }
                 }
-            }
 
-            @Override
-            public void onServicesDiscovered(BluetoothGatt g, int status) {
+                @Override
+                public void onServicesDiscovered(BluetoothGatt g, int status) {
 
-                for (BluetoothGattService service : g.getServices()) {
+                    for (BluetoothGattService service : g.getServices()) {
+                        //Log.d("BLE", "Service: " + service.getUuid());
 
-                    for (BluetoothGattCharacteristic ch : service.getCharacteristics()) {
-
-                        int props = ch.getProperties();
-
-                        if ((props & BluetoothGattCharacteristic.PROPERTY_WRITE) != 0 ||
-                            (props & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0) {
-
-                            writeChar = ch;
-                            Log.d("NAVINDI", "BLE Ready");
-                            return;
+                        for (BluetoothGattCharacteristic ch : service.getCharacteristics()) {
+                            //Log.d("BLE", "Char: " + ch.getUuid() + " props=" + ch.getProperties());
+                            int props = ch.getProperties();
+                            String charUUID = ch.getUuid().toString();
+                            if (charUUID.contains("beb5483e")) {
+                                writeChar = ch;
+                                Log.d("BLE", "Selected UUID: " + charUUID);
+                                if((props & BluetoothGattCharacteristic.PROPERTY_WRITE) != 0){
+                                    Log.d("BLE", "It is PROPERTY_WRITE");
+                                }
+                                if((props & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0){
+                                    Log.d("BLE", "It is PROPERTY_WRITE_NO_RESPONSE");
+                                }
+                                return;
+                            }
                         }
                     }
                 }
-            }
-        },
-        BluetoothDevice.TRANSPORT_LE
-        );
+            },
+            BluetoothDevice.TRANSPORT_LE);
+        }, 500); // with a delay
     }
 
     public void send(String msg) {
-
-        if (gatt == null || writeChar == null) return;
-
-        writeChar.setValue(msg.getBytes());
-        gatt.writeCharacteristic(writeChar);
+        if (gatt == null || writeChar == null){
+            Log.d("NAVINDI", "BLE gatt or write prop is null!");
+        }
+        else{
+            writeChar.setValue(msg.getBytes());
+            gatt.writeCharacteristic(writeChar);
+            //Log.d("NAVINDI", "sent to ble: " + msg);
+        }
     }
 }
 
-// to be added
-new Handler(Looper.getMainLooper()).postDelayed(() -> {
-
-    gatt = device.connectGatt(
-        context,
-        false,
-        callback,
-        BluetoothDevice.TRANSPORT_LE
-    );
-
-}, 500);  // 500 ms delay
+// end
