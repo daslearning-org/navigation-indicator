@@ -10,8 +10,6 @@ __pycache__/
 .buildozer/
 logs/
 bin/
-dist/
-build/
 test_codes/
 config/
 *.apk
