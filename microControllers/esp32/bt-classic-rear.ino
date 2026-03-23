@@ -1,3 +1,5 @@
+// ESP32 Dev Module (Tested on 38pin WROOM module)
+
 #include <FastLED.h>
 #include <ArduinoJson.h>
 
@@ -207,7 +209,7 @@ void loop(){
     String btText = SerialBT.readStringUntil('\n');
     btText.trim();
     btText.toLowerCase();
-    Serial.println("Entered text: " + btText); // Debug
+    //Serial.println("Entered text: " + btText); // Debug
     if (btText == "right" || btText == "left" || 
       btText == "ok-overtake" || btText == "no-overtake" || 
       btText == "u-right" || btText == "u-left" || 

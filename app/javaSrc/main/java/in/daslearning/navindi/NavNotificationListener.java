@@ -173,7 +173,7 @@ public class NavNotificationListener extends NotificationListenerService {
                     //Log.d("NAVINDI", "Arrow bitmap extracted: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
                     big = iconToDirection(bitmap);
-                    Log.d("NAVINDI", "Icon Direction: " + big);
+                    //Log.d("NAVINDI", "Icon Direction: " + big);
 
                 }
                 catch (Exception e) {

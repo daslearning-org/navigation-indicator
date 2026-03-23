@@ -41,6 +41,7 @@ Builder.load_string('''
             MDBoxLayout:
                 orientation: 'horizontal'
                 Check:
+                    id: stear_check_right
                     active: True
                     pos_hint: {'center_y': .5}
                     on_active: app.set_stearing_pos("right")
@@ -51,7 +52,8 @@ Builder.load_string('''
             MDBoxLayout:
                 orientation: 'horizontal'
                 Check:
-                    active: True
+                    id: stear_check_left
+                    #active: True
                     pos_hint: {'center_y': .5}
                     on_active: app.set_stearing_pos("left")
                 MDLabel:

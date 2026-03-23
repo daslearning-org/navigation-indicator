@@ -1,5 +1,10 @@
 ## Changes
 
+### 1.1.0
+- Introducing `BLE` (Bluetooth Low Energy) capability in the Android app.
+- Now the `Stearing` position setting will me remembered in the app.
+- Some improvements.
+
 ### 1.0.0
 #### ✅ The much required update to listen to Google Maps notification
 - Now we are capturing the indicator icons (GMaps doesn't provide text based turn directions) & applying logic to understand whether they are left / right  or u-turns.

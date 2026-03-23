@@ -81,6 +81,29 @@ class NavApp(App):
         self.start_manual_receiver() 
         return self.label
 
+    def start_service_java(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        activity = PythonActivity.mActivity
+        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
+        intent = Intent(activity, NavindiService)
+        activity.startForegroundService(intent) # startService() for android api 25 & older
+        print("Started the service")
+        try:
+            argument = NavindiService.getIntent().getStringExtra("serviceArgument")
+            print(f"Arg from java: {argument}")
+        except Exception as e:
+            print(f"Error accessing service arg: {e}")
+
+    def stop_service_java(self):
+        PythonActivity = autoclass('org.kivy.android.PythonActivity')
+        Intent = autoclass('android.content.Intent')
+        activity = PythonActivity.mActivity
+        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
+        intent = Intent(activity, NavindiService)
+        activity.stopService(intent)
+        print("Stopped the service")
+
     def start_manual_receiver(self):
         if platform != 'android':
             return

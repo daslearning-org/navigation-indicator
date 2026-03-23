@@ -25,7 +25,7 @@ from kivy.properties import StringProperty, NumericProperty, ObjectProperty, Boo
 Window.softinput_mode = "below_target"
 
 ## Global definitions
-__version__ = "1.0.0" # App version
+__version__ = "1.1.0" # App version
 
 # Determine the base path for your application's resources
 if getattr(sys, 'frozen', False):
@@ -156,38 +156,30 @@ class NavIndicatorApp(MDApp):
         self.config_path = os.path.join(self.config_dir, 'config.json')
         self.resp_path = os.path.join(self.config_dir, 'resp.json')
         self.api_url = self.config_template["api_url"]
+        # get existing config details
+        if os.path.exists(self.config_path):
+            with open(self.config_path, 'r') as cf:
+                old_config = json.load(cf)
+            self.config_template["stearing"] = old_config.get("stearing", "right")
+            self.stearing = self.config_template.get("stearing", "right")
+        # initial clean other config values
         with open(self.config_path, "w") as cf:
             json.dump(self.config_template, cf)
         # set app specific objects / vars
         self.result_txt = self.root.ids.nav_main_box.ids.result_text
+        stear_check_right = self.result_txt = self.root.ids.init_screen.ids.stear_check_right
+        stear_check_left = self.result_txt = self.root.ids.init_screen.ids.stear_check_left
+        if self.stearing == "right":
+            stear_check_right.active = True
+            stear_check_left.active = False
+        else:
+            stear_check_left.active = True
+            stear_check_right.active = False
         #self.app_api_server = PosiApiServer()
         #self.app_api_server.set_kivy_caller(self.api_callback)
         self.bluCon = BluetoothCon(platform)
         self.blu_ok = False
         Thread(target=self.dir_resp_checker, daemon=True).start()
-
-    def start_service_java(self):
-        PythonActivity = autoclass('org.kivy.android.PythonActivity')
-        Intent = autoclass('android.content.Intent')
-        activity = PythonActivity.mActivity
-        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
-        intent = Intent(activity, NavindiService)
-        activity.startForegroundService(intent) # startService() for android api 25 & older
-        print("Started the service")
-        try:
-            argument = NavindiService.getIntent().getStringExtra("serviceArgument")
-            print(f"Arg from java: {argument}")
-        except Exception as e:
-            print(f"Error accessing service arg: {e}")
-
-    def stop_service_java(self):
-        PythonActivity = autoclass('org.kivy.android.PythonActivity')
-        Intent = autoclass('android.content.Intent')
-        activity = PythonActivity.mActivity
-        NavindiService = autoclass('in.daslearning.navindi.NavindiService')
-        intent = Intent(activity, NavindiService)
-        activity.stopService(intent)
-        print("Stopped the service")
 
     def start_service(self):
         PythonActivity = autoclass('org.kivy.android.PythonActivity')
@@ -236,7 +228,7 @@ class NavIndicatorApp(MDApp):
     def set_stearing_pos(self, choice:str):
         self.stearing = choice
         self.config_template["stearing"] = choice
-        print(self.stearing)
+        print("Stearing: ", self.stearing)
 
     def list_bl_devices(self, button):
         is_bl_on = self.bluCon.bl_on()
