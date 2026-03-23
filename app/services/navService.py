@@ -46,7 +46,7 @@ if platform == "android":
     except Exception as e:
         config_dir = abspath("/storage/emulated/0/Android/data/in.daslearning.navindi/files/config/")
         print(f"Error while accessing app internal path: {e}")
-    
+
     try:
         # notification listener code for android
         NavListener = autoclass('in.daslearning.navindi.NavNotificationListener')
@@ -92,8 +92,18 @@ if not exists(config_dir):
 config_file = join(config_dir, "config.json")
 resp_file = join(config_dir, "resp.json")
 
-# functions
+#### functions ####
+
+def fire_few_off_commands():
+    """ This will fire few off commands to the bt/ble device. It will be helpful BLE devices. """
+    global auto_indicator
+    for i in range(3):
+        if not auto_indicator:
+            bluCon.send_cmd("off")
+            time.sleep(0.5)
+
 def process_nav_from_api(distance, direction):
+    """ This will send bt/ble command based on distance & direction. """
     #print(f"Bluetooth command: {distance}, {direction}")
     global auto_indicator
     global mac_set
@@ -119,12 +129,12 @@ def process_nav_from_api(distance, direction):
         elif direction == "straight":
             bluCon.send_cmd("off")
             auto_indicator = False
-    elif distance > 60 and auto_indicator and bt_check:
+    elif distance >= 61 and auto_indicator and bt_check:
         bluCon.send_cmd("off")
         auto_indicator = False
-    elif direction == "straight" and auto_indicator and bt_check:
-        bluCon.send_cmd("off")
-        auto_indicator = False
+        if bluCon.ble_device:
+            Thread(target=fire_few_off_commands, daemon=True).start()
+            print("Firing BLE turn off...")
 
 def manual_controls(choice:str):
     global last_choice
@@ -169,11 +179,13 @@ def api_nav_listner(item, *args):
         Thread(target=write_resp, daemon=True).start()
 
 def write_resp():
+    """ Write the response json on file. """
     global resp_template
     with open(resp_file, "w") as rf:
         json.dump(resp_template, rf)
 
 def read_config_file():
+    """ Read the command file from file (Instrunctions from main app). """
     global config_data
     if exists(config_file):
         try:
@@ -183,6 +195,7 @@ def read_config_file():
             print(f"Error while reading config from svc: {e}")
 
 def api_server_control(api_stat: str):
+    """ Turns API server on/off """
     global api_started
     global resp_template
     if api_stat == "stop":
@@ -196,6 +209,7 @@ def api_server_control(api_stat: str):
     Thread(target=write_resp, daemon=True).start()
 
 def auto_mode(control: str):
+    """ Start the automatic navigation notification read & ble control operation. """
     global auto_mode_stat
     global resp_template
     if control == "stop":

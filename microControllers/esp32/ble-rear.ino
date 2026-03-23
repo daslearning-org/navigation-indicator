@@ -1,3 +1,5 @@
+// ESP32 Dev Module (Tested on 38pin WROOM module)
+
 #include <FastLED.h>
 #include <ArduinoJson.h>
 #include <BLEDevice.h>
@@ -9,7 +11,7 @@
 #define NUM_LEDS 64
 #define DATA_PIN 4 // G4 on 38pin dev board
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define CHARACTERISTIC_UUID "beb5483e-36e2-4688-b7f5-ea07361b26a8"
 
 //** Global variables */
 
@@ -247,7 +249,7 @@ void loop(){
   if (bleValue != "none") { // input from BLE
     bleValue.trim();
     bleValue.toLowerCase();
-    Serial.println("Entered text: " + bleValue); // Debug
+    //Serial.println("Entered text: " + bleValue); // Debug
     if (bleValue == "right" || bleValue == "left" || 
       bleValue == "ok-overtake" || bleValue == "no-overtake" || 
       bleValue == "u-right" || bleValue == "u-left" || 

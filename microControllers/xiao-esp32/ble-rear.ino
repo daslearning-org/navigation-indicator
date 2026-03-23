@@ -1,3 +1,4 @@
+// For Seeed Studio XIAO Tiny ESP Series (not tested yet)
 #include <FastLED.h>
 #include <ArduinoJson.h>
 #include <BLEDevice.h>
@@ -178,7 +179,7 @@ void setup(){
   FastLED.clear();
   FastLED.setBrightness(50); // : default
   initFS();
-  BLEDevice::init("NavEspBle");
+  BLEDevice::init("NavEspBleMini");
   BLEServer *pServer = BLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
 
