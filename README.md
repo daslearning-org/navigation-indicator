@@ -5,7 +5,7 @@ Show automatic navigation indications like **left / right turn** indicator, **U-
 
 ## 📽️ Demo
 You can click on the below Image or this [Youtube Link](https://www.youtube.com/watch?v=UGAxZFuZRtc) to see the demo. Please let me know in the comments, how do you feel about this App. <br>
-[![VisionAI](./docs/images/ep1.jpg)](https://www.youtube.com/watch?v=UGAxZFuZRtc)
+[![NavIndi](./docs/images/ep1.jpg)](https://www.youtube.com/watch?v=UGAxZFuZRtc)
 
 ## 💡 How it works
 The flow in simple words:
@@ -25,16 +25,30 @@ Follow this Quick Guide to setup your DIY navigation indicator (automatic or man
 If wish to get the purchase links & more details, check the [official blog](https://blog.daslearning.in/microcontroller/esp32/automatic-vehicle-indicator.html)
 
 ### 🦾 ESP32 Setup
-We can leverage `Classic Bluetooth` or `BLE` (low energy) to communicate from android device to ESP32.
-> Note: Still working on BLE (not implemented yet)
+We can leverage `Classic Bluetooth` or `BLE` (low energy) to communicate from android device to ESP32 depending on the chosen model.
+
+#### 📦 Arduino Setup
+If you want to learn about setting up your ESP32 environment in `Arduino IDE`, you may follow this [fantastic guide](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/).
+
+1. Connect your ESP32 board to your computer with a USB cable.
+
+2. Select proper ESP32 board type from `Tools` > `Boards` selection.
+
+3. Select your USB Serial port in `Tools` > `Port`.
 
 #### 🖧 ESP32 WROOM Connection
+This board supports both classic bluetooth & BLE.
 
 1. All you need is to connect the `GPIO-4` of `ESP32` with the `IN` port of the `WS2812 LED Matrix` and rest all are power connections. <br>
 ![Circuit Diagram](./docs/images/nav-esp-connection.jpg)
 
-#### ᛒ Classic Bluetooth
-Connect your ESP32 board to your computer with a USB cable & upload [this sketch](./microControllers/esp32/bt-classic-rear.ino). If you want to learn about setting up your ESP32 environment in `Arduino IDE`, you may follow this [fantastic guide](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/).
+2. ESP32 board type in Arduino IDE is `ESP32 Dev Module`.
+
+##### ᛒ Classic Bluetooth
+For classic bluetooth upload [this sketch](./microControllers/esp32/bt-classic-rear.ino) using Arduino IDE.
+
+##### ᛒ Bluetooth Low Energy (BLE)
+For BLE upload [this sketch](./microControllers/esp32/ble-rear.ino) using Arduino IDE.
 
 ### 📱 Automatic Indicator using the Android App (Can work independently)
 

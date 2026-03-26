@@ -2,7 +2,7 @@
 
 ### 1.1.0
 - Introducing `BLE` (Bluetooth Low Energy) capability in the Android app.
-- Now the `Stearing` position setting will me remembered in the app.
+- Now the `Stearing` position setting will be remembered in the app.
 - Some improvements.
 
 ### 1.0.0

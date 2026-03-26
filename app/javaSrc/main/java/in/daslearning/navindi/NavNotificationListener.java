@@ -109,7 +109,7 @@ public class NavNotificationListener extends NotificationListenerService {
         float dx = tipX - midX;
         float dy = tipY - midY;
         String direction;
-        if (topCount > 50) {
+        if (topCount > 50) { // can be dynamic if (topCount > count * 0.25)
             direction = "U-TURN";
         }
         // Bottom-heavy → LEFT / RIGHT

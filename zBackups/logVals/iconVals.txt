@@ -21,4 +21,4 @@ NAVINDI : Arrow bitmap extracted: 120x120
 NAVINDI : Center: (15.559406, 13.970297)
 NAVINDI : Tip: (3, 27)
 NAVINDI : TopCount=29
-NAVINDI : Direction: U-TURN
+NAVINDI : Direction: RIGHT
