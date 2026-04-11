@@ -5,6 +5,7 @@
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
+//#include <esp_system.h>
 
 #include "LittleFS.h"
 
@@ -30,6 +31,9 @@ Config appConfig;
 bool ledState = false;
 bool awake = false;
 bool blink = true;
+bool deviceConnected = false;
+bool oldDeviceConnected = false;
+BLEServer* pServer = nullptr;
 
 // LED controls
 CRGB leds[NUM_LEDS];
@@ -137,12 +141,17 @@ class MyCallbacks: public BLECharacteristicCallbacks {
 
 class MyServerCallbacks: public BLEServerCallbacks {
   void onConnect(BLEServer* pServer) {
+    deviceConnected = true;
     Serial.println("Client Connected");
   }
 
   void onDisconnect(BLEServer* pServer) {
+    deviceConnected = false;
     Serial.println("Client Disconnected");
-    BLEDevice::startAdvertising();   // this starts the BLE server again
+    //delay(500);
+    //pServer->startAdvertising();   // this starts the BLE server again
+    //delay(500);
+    //ESP.restart(); // to restart the ESP itself
   }
 };
 
@@ -181,7 +190,7 @@ void setup(){
   FastLED.setBrightness(50); // : default
   initFS();
   BLEDevice::init("NavEspBle");
-  BLEServer *pServer = BLEDevice::createServer();
+  pServer = BLEDevice::createServer(); // now global
   pServer->setCallbacks(new MyServerCallbacks());
 
   BLEService *pService = pServer->createService(SERVICE_UUID);
@@ -249,7 +258,7 @@ void loop(){
   if (bleValue != "none") { // input from BLE
     bleValue.trim();
     bleValue.toLowerCase();
-    //Serial.println("Entered text: " + bleValue); // Debug
+    Serial.println("Entered text: " + bleValue); // Debug
     if (bleValue == "right" || bleValue == "left" || 
       bleValue == "ok-overtake" || bleValue == "no-overtake" || 
       bleValue == "u-right" || bleValue == "u-left" || 
@@ -280,5 +289,19 @@ void loop(){
   if ((currentMillis - previousMillis >= interval) && blink) {
     previousMillis = currentMillis;
     ledState = !ledState;
+  }
+
+  // Handle disconnect
+  if (!deviceConnected && oldDeviceConnected) {
+    Serial.println("Disconnected detected in loop");
+    delay(500);  // allow BLE stack to settle
+    pServer->startAdvertising();   // Start broadcasting again
+    Serial.println("BLE re-advertise started..");
+    oldDeviceConnected = deviceConnected;
+  }
+
+  // Handle new connection
+  if (deviceConnected && !oldDeviceConnected) {
+    oldDeviceConnected = deviceConnected;
   }
 }
