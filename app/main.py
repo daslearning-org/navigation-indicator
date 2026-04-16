@@ -25,7 +25,7 @@ from kivy.properties import StringProperty, NumericProperty, ObjectProperty, Boo
 Window.softinput_mode = "below_target"
 
 ## Global definitions
-__version__ = "1.1.0" # App version
+__version__ = "1.1.1" # App version
 
 # Determine the base path for your application's resources
 if getattr(sys, 'frozen', False):
@@ -298,19 +298,62 @@ class NavIndicatorApp(MDApp):
 
     def dir_resp_checker(self):
         import time
+        off_flag = False
+        left_flag = False
+        right_flag = False
+        uturn_flag = False
+        indi_btns = {
+            "left_u_turn_btn": self.root.ids.nav_main_box.ids.left_u_turn_btn,
+            "right_u_turn_btn": self.root.ids.nav_main_box.ids.right_u_turn_btn,
+            "left_turn_btn": self.root.ids.nav_main_box.ids.left_turn_btn,
+            "right_turn_btn": self.root.ids.nav_main_box.ids.right_turn_btn,
+            "all_off": self.root.ids.nav_main_box.ids.all_off,
+        }
         while True:
             resp = None
             if os.path.exists(self.resp_path):
                 with open(self.resp_path, "r") as rf:
                     resp = json.load(rf)
                 if resp:
-                    resp_distance = resp.get("distance", "")
-                    resp_direction = resp.get("direction", "")
-                    current_text = f"{resp_distance}, {resp_direction}"
+                    distance = resp.get("distance", "")
+                    direction = resp.get("direction", "")
+                    current_text = f"{distance}, {direction}"
                     if self.resp_old_text != current_text:
                         self.resp_old_text = current_text
                         self.result_txt.text = current_text
-            time.sleep(1)
+                    # change the btn (auto mode from navigation) >> To be tested!!
+                    if direction == "left" and not left_flag:
+                        self.turn_off_all()
+                        off_flag = False
+                        left_flag = True
+                        right_flag = False
+                        uturn_flag = False
+                        indi_btns["left_turn_btn"].md_bg_color = "orange"
+                    elif direction == "right" and not right_flag:
+                        self.turn_off_all()
+                        off_flag = False
+                        left_flag = False
+                        right_flag = True
+                        uturn_flag = False
+                        indi_btns["right_turn_btn"].md_bg_color = "orange"
+                    elif direction == "u-turn" and not uturn_flag:
+                        self.turn_off_all()
+                        off_flag = False
+                        left_flag = False
+                        right_flag = False
+                        uturn_flag = True
+                        if self.stearing == "right":
+                            indi_btns["right_u_turn_btn"].md_bg_color = "orange"
+                        else:
+                            indi_btns["left_u_turn_btn"].md_bg_color = "orange"
+                    elif direction == "off" and not off_flag:
+                        self.turn_off_all()
+                        off_flag = True
+                        left_flag = False
+                        right_flag = False
+                        uturn_flag = False
+            # thread sleep
+            time.sleep(0.5)
 
     def go_to_nav(self, confirm=False, instance=None):
         if confirm or self.blu_ok:

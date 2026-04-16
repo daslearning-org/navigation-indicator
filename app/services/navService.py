@@ -109,10 +109,12 @@ def process_nav_from_api(distance, direction):
     global mac_set
     global bt_connecting
     global last_choice
+    global resp_template
 
     bt_check = bluCon.check_bl_stat()
     if not bt_check and not bt_connecting and mac_set:
         connect_bluetooth(mac_set)
+        bt_check = bluCon.check_bl_stat()
     if distance >= 0 and distance < 61 and bt_check:
         if direction == "left":
             bluCon.send_cmd("left")
@@ -130,11 +132,15 @@ def process_nav_from_api(distance, direction):
             bluCon.send_cmd("off")
             auto_indicator = False
     elif distance >= 61 and auto_indicator and bt_check:
+        direction = "off"
         bluCon.send_cmd("off")
         auto_indicator = False
         if bluCon.ble_device:
             Thread(target=fire_few_off_commands, daemon=True).start()
             print("Firing BLE turn off...")
+    resp_template["direction"] = direction
+    resp_template["distance"] = distance
+    Thread(target=write_resp, daemon=True).start()
 
 def manual_controls(choice:str):
     global last_choice
@@ -143,9 +149,13 @@ def manual_controls(choice:str):
     bt_check = bluCon.check_bl_stat()
     if not bt_check and not bt_connecting and mac_set:
         connect_bluetooth(mac_set)
+        bt_check = bluCon.check_bl_stat()
     if choice != "none" and last_choice != choice and bt_check:
         bluCon.send_cmd(choice)
         last_choice = choice
+        if bluCon.ble_device and choice=="off":
+            Thread(target=fire_few_off_commands, daemon=True).start()
+            print("Firing BLE turn off...")
 
 def dayNightControl():
     import time
@@ -157,7 +167,7 @@ def dayNightControl():
     bluCon.send_cmd(control)
 
 def api_nav_listner(item, *args):
-    global resp_template
+    #global resp_template
     distance_final = None
     direction_final = None
     for i in item:
@@ -172,11 +182,8 @@ def api_nav_listner(item, *args):
         if distance_tmp and direction_tmp:
             break # got both direction & distance to process
     if distance_final and direction_final:
-        resp_template["direction"] = direction_final
-        resp_template["distance"] = distance_final
         #print(f"Got from API: {distance_final}, {direction_final}")
         process_nav_from_api(distance=distance_final, direction=direction_final)
-        Thread(target=write_resp, daemon=True).start()
 
 def write_resp():
     """ Write the response json on file. """
@@ -273,9 +280,8 @@ def nav_service_thread():
         
         #handle bt commands from buttons
         choice = config_data.get("cmd", "none")
-        if choice != "none" and last_choice != choice and blue_conn_stat:
-            bluCon.send_cmd(choice)
-            last_choice = choice
+        if choice != "none":
+            manual_controls(choice)
             #print(f"manual: {choice}")
 
         #handle api server
@@ -305,7 +311,7 @@ def nav_service_thread():
 
         #sys.stdout.flush()
         # put a sleep
-        time.sleep(0.5)
+        time.sleep(0.2)
 
 if __name__ == "__main__":
     # start the service from here (if required)

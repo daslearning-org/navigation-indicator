@@ -1,5 +1,11 @@
 ## Changes
 
+### 1.1.1
+- BLE manual `OFF` needs few more tries.
+- Reducing the service sleep time from 500ms to 200ms.
+- Now app will enable the indicator buttons as per navigation in auto mode.
+- Some service enhancements.
+
 ### 1.1.0
 - Introducing `BLE` (Bluetooth Low Energy) capability in the Android app.
 - Now the `Stearing` position setting will be remembered in the app.

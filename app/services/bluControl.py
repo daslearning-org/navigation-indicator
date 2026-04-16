@@ -85,7 +85,6 @@ class BluetoothCon():
 
     def connect_device(self, mac):
         print(f"MAC connect request: {mac}")
-        stat = False
         if self.platform == "android":
             try:
                 ble_device = self.check_bt_type(mac)
@@ -95,7 +94,6 @@ class BluetoothCon():
                     self.ble_client.connect(mac)
                     self.mac_addr = mac
                     self.connect_ok = True
-                    stat = True
                 else: # classic BT
                     from jnius import autoclass
                     BluetoothAdapter = autoclass('android.bluetooth.BluetoothAdapter')
@@ -112,10 +110,10 @@ class BluetoothCon():
                     print("Connected to: ", mac)
                     self.mac_addr = mac
                     self.connect_ok = True
-                    stat = True
             except Exception as e:
                 print(f"Error while conencting to ESP32: {e}")
-        return stat
+                self.connect_ok = False
+        return self.connect_ok
 
     def check_bl_stat(self):
         """Check if bluetooth connection is fine: returns Bool"""
